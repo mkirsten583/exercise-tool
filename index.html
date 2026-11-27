@@ -72,6 +72,13 @@ table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:5px 6px;
 .route{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}.route polyline{fill:none;stroke:var(--data);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}.route circle{fill:var(--ink);stroke:var(--surface);stroke-width:2}
 .line{margin:0 0 10px}.line figcaption{display:flex;justify-content:space-between;font-size:12.5px}.plot{position:relative;border-bottom:1px solid var(--line);touch-action:pan-y}.plot svg{display:block;width:100%;height:100px}
 .plot path{fill:none;stroke:var(--data);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}.cross{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);pointer-events:none}
+figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:4px}
+.zrow{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr) 4.5em;gap:8px;align-items:center;padding:2px 0}.zrow b{font-size:12.5px}.zrow small{display:block;font-size:11px;color:var(--muted)}
+.zbar{height:16px;border-left:1px solid var(--line)}.zbar i{display:block;height:100%;background:var(--data);border-radius:0 4px 4px 0}.zt{text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px}
+.maxhr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.maxhr input{width:80px;margin:0 4px}.warnnote{color:var(--warn);margin:6px 0 0}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.ai{display:flex;flex-direction:column;gap:8px}.aitext{border:1px solid var(--line);border-radius:10px;padding:4px 14px 10px;background:var(--bg)}.aitext h4{margin:10px 0 4px;font-size:14px}.aitext ul,.aitext ol{margin:4px 0;padding-left:20px}.aitext p{margin:6px 0}
+#keybox{display:flex;flex-direction:column;gap:6px;align-items:flex-start}#keybox .f{align-self:stretch}.busy{color:var(--muted)}
 #tip{position:fixed;z-index:9;pointer-events:none;background:var(--ink);color:var(--surface);padding:5px 9px;border-radius:6px;font-size:12.5px;white-space:nowrap}
 #toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}#toast.show{opacity:1}
 @media (max-width:560px){#stats,.metrics{grid-template-columns:1fr 1fr}.addbtn{font-size:12px}.cx img:nth-of-type(n+2){display:none}h1{width:100%}}
@@ -119,9 +126,9 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-27 · exercise tool v1.1 · icon and connection details';
+const VERSION='2026-11-27 · exercise tool v1.2 · upload graphs, heart rate zones, AI feedback, calendar export';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
-const LS={sb:'exercise-sb-v1',auth:'exercise-sb-auth-v1',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1'};
+const LS={sb:'exercise-sb-v1',auth:'exercise-sb-auth-v1',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
 const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}};
 const lsSet=(k,v)=>{try{v===null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
@@ -468,6 +475,7 @@ function drawEditor(){
   <div class="dbody">
     <div class="typerow">${Object.entries(TYPES).map(([k,t])=>`<button type="button" class="chip t-${k} ${a.type===k?'on':''}" data-etype="${k}">${icon(k)}${t.label}</button>`).join('')}</div>
     <div class="drop" id="drop">Drag a <b>.fit</b> file or pictures here (or paste a picture)<br><button type="button" class="btn" id="pick">Choose files</button></div>
+    ${ed.detail&&ed.detail.series?`<div class="preview"><div class="lab">Graphs from the file</div>${graphsHtml(ed.detail,a)}</div>`:''}
     <div class="grid2">
       <label class="f"><span>Date</span><input id="f_date" type="date" value="${a.date}" required></label>
       <label class="f"><span>Start time</span><input id="f_time" type="time" value="${a.time||''}"></label>
@@ -482,7 +490,7 @@ function drawEditor(){
     <label class="f wide"><span>Notes</span><textarea id="f_notes" rows="3">${esc(a.notes||'')}</textarea></label>
     ${files.length?`<div class="lab">Attached</div><div class="atts">${files.map(f=>`<div class="att">${f.thumb?`<img src="${f.thumb}" alt="">`:icon(f.kind==='photo'?'image':'clip')}<span>${esc(f.name)}</span><button type="button" class="x" data-delfile="${f.id}" aria-label="Remove ${esc(f.name)}">×</button></div>`).join('')}</div>`:''}
   </div>
-  <div class="dfoot">${ed.isNew?'':'<button type="button" class="btn danger" id="delAct">Delete</button>'}<span class="sp"></span><button type="button" class="btn" id="cancelEd">Cancel</button><button type="submit" class="btn primary" id="saveEd">Save</button></div></form>`;
+  <div class="dfoot">${ed.isNew?'':'<button type="button" class="btn danger" id="delAct">Delete</button>'}<span class="sp"></span><button type="button" class="btn" id="cancelEd">Cancel</button>${ed.detail?'<button type="submit" class="btn" id="saveAsk">Save and ask AI</button>':''}<button type="submit" class="btn primary" id="saveEd">Save</button></div></form>`;
 }
 function readEditor(){
   const a=ed.a, v=id=>{const e=$('#f_'+id);return e?e.value.trim():null;};
@@ -496,7 +504,7 @@ const filePath=(a,f,folder)=>`${ONEDRIVE_FOLDER}/${folder}/${a.date} ${f.id} ${f
 function applyFit(parsed,file){
   const p=parsed.activity, a=ed.a;
   for(const [k,val] of Object.entries(p)){ if(k==='type'&&!val) continue; if(val!==null&&val!==undefined) a[k]=val; }
-  ed.detail=parsed.detail;
+  ed.detail=parsed.detail; delete a.ai;
   for(const f of (a.files||[]).filter(f=>f.kind==='fit')) removeFile(f.id);
   const meta={id:uid(),kind:'fit',name:file.name,size:file.blob.size,uploaded:false};
   (a.files=a.files||[]).push(meta); ed.pending.set(meta.id,file.blob); ed.dirty=true;
@@ -583,18 +591,19 @@ async function handleFiles(files,targetId){
   }
   toast(`Imported ${n} of ${typed.length}.`); afterChange();
 }
-async function saveEditor(){
+async function saveEditor(ask){
   readEditor(); const a=ed.a;
   if(a.sets) a.sets=a.sets.filter(s=>s.name||s.sets||s.reps||s.weight);
   if(!a.date){toast('Choose a date.');return;}
-  const btn=$('#saveEd'); btn.disabled=true;
+  const btns=$$('#saveEd,#saveAsk'); btns.forEach(b=>b.disabled=true);
   try{
     for(const f of a.files||[]) if(ed.pending.has(f.id)){f.path=filePath(a,f,f.kind==='fit'?'FIT Files':'Pictures');await idbPut(f.id,{blob:ed.pending.get(f.id)});}
     if(ed.isNew) await insertRow(ed.id,a,ed.detail); else await updateRow(ed.id,ed.rev,a,ed.detail);
-    const removed=ed.removed; $('#editDlg').close(); ed=null; toast('Saved.'); afterChange(); deleteFiles(removed);
+    const removed=ed.removed, id=ed.id; $('#editDlg').close(); ed=null; toast('Saved.'); afterChange(); deleteFiles(removed);
+    if(ask){await openView(id);runAi(id);}
   }catch(e){
     if(e.conflict){$('#editDlg').close();ed=null;await loadRows();syncOneDrive();}
-    else btn.disabled=false;
+    else btns.forEach(b=>b.disabled=false);
     toast(e.message||'Could not save.');
   }
 }
@@ -626,22 +635,11 @@ function routeSvg(route){
   const a=pts[0].split(',');
   return `<svg class="route" viewBox="0 0 580 280" role="img" aria-label="Route shape"><polyline points="${pts.join(' ')}"/><circle cx="${a[0]}" cy="${a[1]}" r="5"/></svg>`;
 }
-const SERIES=[['hr','Heart rate','bpm',1],['pw','Power','W',1],['sp','Speed','km/h',3.6],['cad','Cadence','rpm',1],['al','Elevation','m',1]];
-function chartsHtml(s){
-  return SERIES.filter(([k])=>s[k]).map(([k,label,unit,mul])=>{
-    const v=s[k].map(x=>x===null?null:x*mul), real=v.filter(x=>x!==null); if(real.length<2) return '';
-    let lo=Math.min(...real),hi=Math.max(...real); if(hi-lo<10){hi+=5;lo-=5;}
-    const T=s.t[s.t.length-1]||1; let d='',pen=false;
-    v.forEach((y,i)=>{if(y===null){pen=false;return;}d+=(pen?'L':'M')+(s.t[i]/T*600).toFixed(1)+' '+(96-(y-lo)/(hi-lo)*90).toFixed(1);pen=true;});
-    return `<figure class="line" data-k="${k}" data-mul="${mul}" data-unit="${unit}"><figcaption><b>${label}</b><span class="muted">${Math.round(lo)}–${Math.round(hi)} ${unit}</span></figcaption>
-      <div class="plot"><svg viewBox="0 0 600 100" preserveAspectRatio="none" role="img" aria-label="${label} over time"><path d="${d}"/></svg><i class="cross" hidden></i></div></figure>`;
-  }).join('');
-}
-let viewDetail=null;
+let viewDetail=null, viewLoaded=null;
 async function openView(id){
   const r=rowById(id); if(!r) return;
   const a=r.data, d=$('#viewDlg'), p=paceText(a), files=a.files||[];
-  d.dataset.id=id; viewDetail=null;
+  d.dataset.id=id; viewDetail=null; viewLoaded=null;
   const m=[['Duration',hms(a.duration)],['Distance',kmText(a.distance)],p,['Avg heart rate',a.avgHr&&a.avgHr+' bpm'],['Max heart rate',a.maxHr&&a.maxHr+' bpm'],['Avg power',a.avgPower&&a.avgPower+' W'],['Max power',a.maxPower&&a.maxPower+' W'],['Avg cadence',a.avgCadence&&String(a.avgCadence)],['Climb',a.ascent!=null&&a.type!=='weights'?a.ascent+' m':''],['Max speed',a.maxSpeed&&(a.maxSpeed*3.6).toFixed(1)+' km/h'],['Calories',a.calories&&String(a.calories)]].filter(x=>x&&x[1]);
   d.innerHTML=`<div class="dhead t-${a.type}"><span class="ic">${icon(a.type)}</span><span>${esc(titleOf(a))}<small>${fmtDate(a.date)}${a.time?' at '+a.time:''}${a.source&&a.source!=='manual'?' · from '+({zwift:'Zwift',garmin:'Garmin'}[a.source]||'a FIT file'):''}</small></span></div>
   <div class="dbody">
@@ -649,17 +647,20 @@ async function openView(id){
     ${a.sets&&a.sets.length?`<table><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>kg</th></tr>${a.sets.map(s=>`<tr><td>${esc(s.name)}</td><td>${s.sets||''}</td><td>${s.reps||''}</td><td>${s.weight||''}</td></tr>`).join('')}</table>`:''}
     ${a.notes?`<p class="notes">${esc(a.notes)}</p>`:''}
     ${files.some(f=>f.kind==='photo')?`<div class="photos">${files.filter(f=>f.kind==='photo').map(f=>`<button type="button" data-photo="${f.id}">${f.thumb?`<img src="${f.thumb}" alt="${esc(f.name)}">`:icon('image')+esc(f.name)}</button>`).join('')}</div>`:''}
+    <section id="ai" class="ai"></section>
     <div id="detail"></div>
     ${files.filter(f=>f.kind==='fit').map(f=>`<button type="button" class="btn" data-download="${f.id}">${icon('clip')} ${esc(f.name)}${f.uploaded?'':' (waiting to upload)'}</button>`).join('')}
+    <button type="button" class="btn" id="icsBtn">Export to calendar (.ics)</button>
     <p class="muted">Drop a .fit file or picture here to add it.</p>
   </div>
   <div class="dfoot"><span class="sp"></span><button type="button" class="btn" id="closeView">Close</button><button type="button" class="btn primary" id="editView">Edit / add files</button></div>`;
+  drawAi();
   if(!d.open) d.showModal(); d.scrollTop=0;
   const {data,error}=await sb.from('activities').select('detail').eq('id',id).single();
   if(d.dataset.id!==id||!d.open) return;
   if(error){$('#detail').innerHTML=`<p class="muted">The route and graphs could not be loaded.</p>`;return;}
-  viewDetail=data&&data.detail;
-  if(viewDetail) $('#detail').innerHTML=(viewDetail.route?routeSvg(viewDetail.route):'')+(viewDetail.series?chartsHtml(viewDetail.series):'');
+  viewDetail=data&&data.detail; viewLoaded=id;
+  if(viewDetail) $('#detail').innerHTML=(viewDetail.route?routeSvg(viewDetail.route):'')+graphsHtml(viewDetail,r.data);
 }
 async function openFile(id,download){
   const r=rowById($('#viewDlg').dataset.id), f=r&&r.data.files.find(f=>f.id===id); if(!f) return;
@@ -683,6 +684,12 @@ function openSettings(){
     <div class="lab">OneDrive</div><p>${msalAccount?`Signed in as <b>${esc(msalAccount.username)}</b>.`:'Not signed in.'} Folder: <b>${esc(ONEDRIVE_FOLDER)}</b>${odError?`<br><span class="bad">${esc(odError)}</span>`:''}</p>
     ${GRAPH_CLIENT_ID?'':`<label class="f wide"><span>Azure application (client) ID</span><input id="cid" value="${esc(clientId())}" autocomplete="off" spellcheck="false"></label><p class="muted">Redirect URI to register in Azure: <b>${esc(location.origin+location.pathname)}</b></p><button type="button" class="btn" id="saveCid">Save ID</button>`}
     <div class="btnrow"><button type="button" class="btn" id="msIn">${msalAccount?'Sync now':'Sign in with Microsoft'}</button>${msalAccount?'<button type="button" class="btn" id="msOut">Sign out of OneDrive</button>':''}</div>
+    <div class="lab">Heart rate zones</div>${user?maxHrField((user.user_metadata&&user.user_metadata.maxHr)||lsGet(LS.maxHr)):'<p class="muted">Sign in first.</p>'}
+    <div class="lab">AI feedback</div>
+    <label class="f"><span>Anthropic API key ${aiKey()?'(one is saved in this browser: leave blank to keep it)':''}</span><input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
+    <label class="f"><span>Model</span><input id="setModel" value="${esc(aiModel())}" autocomplete="off" spellcheck="false"></label>
+    <div class="btnrow"><button type="button" class="btn" id="saveAiSet">Save AI settings</button>${aiKey()?'<button type="button" class="btn" id="forgetKey">Remove key</button>':''}</div>
+    <p class="muted">The key stays in this browser (other pages on the same GitHub site share that storage). Use a separate key with a spend limit.</p>
     <div class="lab">Backup</div><div class="btnrow"><button type="button" class="btn" id="export">Export all data</button><button type="button" class="btn" id="import">Import a backup</button></div>
     <p class="muted">Version ${VERSION}${c?' · '+esc(c.url):''}</p>
   </div><div class="dfoot"><span class="sp"></span><button type="button" class="btn primary" data-close>Close</button></div>`;
@@ -721,6 +728,7 @@ async function enterApp(u){
   user=u; $('#gate').hidden=true; $('#main').hidden=false;
   const c=lsGet(LS.cache); if(c&&c.user===u.id){rows=c.rows;sortRows();}
   render();
+  if(sb.auth.getUser) sb.auth.getUser().then(({data})=>{if(data&&data.user&&user&&data.user.id===user.id){user=data.user;lsSet(LS.maxHr,data.user.user_metadata?.maxHr||null);redrawGraphs();}}).catch(()=>{});   // picks up zones changed on another device
   if(await loadRows()){
     syncOneDrive();
     if(wanted){
@@ -744,7 +752,7 @@ async function initDb(){
 /* ---------- events ---------- */
 document.addEventListener('submit',async e=>{
   e.preventDefault();
-  if(e.target.id==='editForm') return saveEditor();
+  if(e.target.id==='editForm') return saveEditor(e.submitter&&e.submitter.id==='saveAsk');
   if(e.target.id==='connectForm'){
     const url=$('#sbUrl').value.trim().replace(/\/(rest\/v1)?\/?$/,''), key=$('#sbKey').value.trim();
     if(badKey(key)) return showGate('connect','That is the SECRET key. Use the publishable (anon) key.');
@@ -766,6 +774,13 @@ document.addEventListener('click',async e=>{
   if(t.classList.contains('card')) return openView(d.id);
   if(d.etype){readEditor();ed.a.type=d.etype;return drawEditor();}
   if(d.delset!==undefined){readEditor();ed.a.sets.splice(+d.delset,1);return drawEditor();}
+  if(d.savemax!==undefined) return saveMaxHr(t);
+  if(t.id==='icsBtn') return exportIcs($('#viewDlg').dataset.id);
+  if(t.id==='askAi') return runAi($('#viewDlg').dataset.id);
+  if(t.id==='copyAi') return copyForClaude($('#viewDlg').dataset.id);
+  if(t.id==='saveKey'){const k=$('#aiKeyIn').value.trim();if(!k){toast('Paste the key first.');return;}lsSet(LS.aiKey,k);return runAi($('#viewDlg').dataset.id);}
+  if(t.id==='saveAiSet'){const k=$('#setKey').value.trim(), m=$('#setModel').value.trim();if(k)lsSet(LS.aiKey,k);lsSet(LS.aiModel,m&&m!==AI_MODEL?m:null);toast('AI settings saved.');drawAi();return openSettings();}
+  if(t.id==='forgetKey'){lsSet(LS.aiKey,null);toast('Key removed from this browser.');drawAi();return openSettings();}
   if(d.delfile){readEditor();removeFile(d.delfile);return drawEditor();}
   if(d.photo) return openFile(d.photo);
   if(d.download) return openFile(d.download,true);
@@ -790,7 +805,8 @@ document.addEventListener('click',async e=>{
     case 'import':$('#backupIn').click();break;
   }
 });
-document.addEventListener('input',e=>{if(e.target.closest('#editForm'))ed.dirty=true;});
+document.addEventListener('input',e=>{if(e.target.closest('#editForm')&&!e.target.closest('.maxhr'))ed.dirty=true;});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const m=e.target.closest&&e.target.closest('.maxhr');if(m){e.preventDefault();saveMaxHr($('[data-savemax]',m));}});
 $('#editDlg').addEventListener('cancel',e=>{e.preventDefault();closeEditor();});
 $('#fileIn').addEventListener('change',e=>{const f=[...e.target.files];e.target.value='';handleFiles(f);});
 $('#backupIn').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)importBackup(f);});
@@ -810,8 +826,8 @@ document.addEventListener('pointermove',e=>{
   const bar=e.target.closest&&e.target.closest('[data-tip]'), plot=e.target.closest&&e.target.closest('.plot');
   $$('.cross').forEach(c=>c.hidden=true);
   if(bar) text=bar.dataset.tip;
-  else if(plot&&viewDetail){
-    const fig=plot.parentElement, s=viewDetail.series, box=plot.getBoundingClientRect(), T=s.t[s.t.length-1]||1, at=(e.clientX-box.left)/box.width*T;
+  else if(plot&&(plot.closest('#editDlg')?ed&&ed.detail:viewDetail)){
+    const fig=plot.parentElement, s=(plot.closest('#editDlg')?ed.detail:viewDetail).series, box=plot.getBoundingClientRect(), T=s.t[s.t.length-1]||1, at=(e.clientX-box.left)/box.width*T;
     let i=0; while(i<s.t.length-1&&Math.abs(s.t[i+1]-at)<=Math.abs(s.t[i]-at)) i++;
     const v=s[fig.dataset.k][i];
     const c=$('.cross',plot); c.hidden=false; c.style.left=(s.t[i]/T*100)+'%';
@@ -938,7 +954,11 @@ function parseFit(buf){
     const pts=recs.filter(r=>r[0]!==undefined&&r[1]!==undefined&&(r[0]||r[1]));
     const step=Math.max(1,Math.ceil(pts.length/500));
     const route=pts.filter((_,i)=>i%step===0||i===pts.length-1).map(r=>[+(r[0]*180/2147483648).toFixed(5),+(r[1]*180/2147483648).toFixed(5)]);
+    /* seconds spent at each heart rate, for the zone graph (gaps over 30 s are pauses) */
+    const hrSecs={};
+    recs.forEach((r,i)=>{if(!r[3])return;const nx=recs[i+1];let dt=nx?nx[253]-r[253]:1;if(!(dt>=0&&dt<=30))dt=1;hrSecs[r[3]]=(hrSecs[r[3]]||0)+dt;});
     const detail={series:recs.length>1?bucketSeries(recs,start):null,route:route.length>1?route:null};
+    if(Object.keys(hrSecs).length) detail.hrSecs=hrSecs;
     return {activity:a,detail:(detail.series||detail.route)?detail:null};
   });
 }
@@ -962,6 +982,215 @@ async function unzipFits(buf){
   if(!out.length) throw new Error('No .fit file was found inside that zip.');
   return out;
 }
+/* ---------- graphs and heart rate zones ---------- */
+const SERIES=[['pw','Power','W',1,'avgPower','maxPower'],['cad','Cadence','rpm',1,'avgCadence','maxCadence'],['hr','Heart rate','bpm',1,'avgHr','maxHr'],['sp','Speed','km/h',3.6,null,'maxSpeed'],['al','Elevation','m',1]];
+function lineChart(s,a,[k,label,unit,mul,avgKey,maxKey]){
+  if(!s[k]) return '';
+  const v=s[k].map(x=>x===null?null:x*mul), real=v.filter(x=>x!==null); if(real.length<2) return '';
+  let lo=Math.min(...real),hi=Math.max(...real); if(hi-lo<10){hi+=5;lo-=5;}
+  const T=s.t[s.t.length-1]||1; let d='',pen=false;
+  v.forEach((y,i)=>{if(y===null){pen=false;return;}d+=(pen?'L':'M')+(s.t[i]/T*600).toFixed(1)+' '+(96-(y-lo)/(hi-lo)*90).toFixed(1);pen=true;});
+  /* the headline figures come from the whole file: the line is smoothed, so its peaks are lower */
+  let avg=avgKey&&a[avgKey]; if(k==='sp'&&a.distance&&a.duration) avg=Math.round(a.distance/a.duration*36)/10;
+  let max=maxKey&&a[maxKey]; if(k==='sp'&&max) max=Math.round(max*36)/10;
+  const head=[avg&&`avg ${avg}`,max&&`max ${max}`].filter(Boolean).join(' · ');
+  return `<figure class="line" data-k="${k}" data-mul="${mul}" data-unit="${unit}"><figcaption><b>${label} (${unit})</b><span class="muted">${head}</span></figcaption>
+    <div class="plot"><svg viewBox="0 0 600 100" preserveAspectRatio="none" role="img" aria-label="${label} over time"><path d="${d}"/></svg><i class="cross" hidden></i></div>
+    <div class="axis"><span>0:00</span><span>line from ${Math.round(lo)} to ${Math.round(hi)} ${unit}</span><span>${hms(T)}</span></div></figure>`;
+}
+const ZONES=[['Below zone 1','Very easy',0],['Zone 1','Warm up / recovery',50],['Zone 2','Easy endurance',60],['Zone 3','Aerobic / tempo',70],['Zone 4','Threshold',80],['Zone 5','Maximum',90]];
+/* max heart rate: kept with the Supabase user so every device uses the same zones */
+function maxHrInfo(a){
+  const set=+((user&&user.user_metadata&&user.user_metadata.maxHr)||lsGet(LS.maxHr)||0);
+  if(set) return {max:set,assumed:false};
+  return {max:Math.max(180,a.maxHr||0),assumed:true};
+}
+function zoneTimes(detail,max){
+  const secs=ZONES.map(()=>0); let exact=true, any=false;
+  const add=(bpm,t)=>{const pct=bpm/max*100;let i=ZONES.length-1;while(i>0&&pct<ZONES[i][2])i--;secs[i]+=t;any=true;};
+  if(detail.hrSecs) for(const [bpm,t] of Object.entries(detail.hrSecs)) add(+bpm,t);
+  else if(detail.series&&detail.series.hr){exact=false;const s=detail.series;s.hr.forEach((h,i)=>{if(h)add(h,i+1<s.t.length?s.t[i+1]-s.t[i]:(i?s.t[i]-s.t[i-1]:1));});}
+  if(!any) return null;
+  const total=secs.reduce((x,y)=>x+y,0)||1;
+  return {exact,total,zones:ZONES.map(([name,what,from],i)=>({name,what,secs:secs[i],share:secs[i]/total,
+    range:i===0?`under ${Math.ceil(max*.5)}`:i===ZONES.length-1?`${Math.ceil(max*from/100)}+`:`${Math.ceil(max*from/100)}–${Math.ceil(max*ZONES[i+1][2]/100)-1}`}))};
+}
+const maxHrField=v=>`<div class="maxhr"><label>Your max heart rate <input type="number" inputmode="numeric" min="100" max="230" value="${v||''}" aria-label="Maximum heart rate"> bpm</label><button type="button" class="btn" data-savemax>Apply</button></div>`;
+function zonesHtml(detail,a){
+  const m=maxHrInfo(a), z=zoneTimes(detail,m.max); if(!z) return '';
+  const top=Math.max(...z.zones.map(x=>x.share));
+  return `<figure class="zones"><figcaption><b>Time in heart rate zones</b><span class="muted">based on max ${m.max} bpm</span></figcaption>
+    ${z.zones.map((x,i)=>({x,i})).filter(({x,i})=>i>0||x.secs).map(({x})=>`<div class="zrow" data-tip="${x.name}: ${x.range} bpm, ${hms(x.secs)||'0:00'}"><span class="zn"><b>${x.name}</b><small>${x.what} · ${x.range}</small></span><span class="zbar"><i style="width:${(top?x.share/top*100:0).toFixed(1)}%"></i></span><span class="zt">${hms(x.secs)||'0:00'}<small>${Math.round(x.share*100)}%</small></span></div>`).join('')}
+    ${m.assumed?`<p class="warnnote">These zones assume a maximum of ${m.max} bpm. Enter your own for accurate zones.</p>`:''}
+    ${z.exact?'':'<p class="muted">Approximate: worked out from the smoothed graph. Drop the FIT file onto this exercise again for exact times.</p>'}
+    ${maxHrField(m.assumed?'':m.max)}</figure>`;
+}
+function graphsHtml(detail,a){
+  if(!detail) return '';
+  const s=detail.series; let h='';
+  if(s) for(const def of SERIES){h+=lineChart(s,a,def); if(def[0]==='hr') h+=zonesHtml(detail,a);}
+  return h;
+}
+async function saveMaxHr(btn){
+  const v=Math.round(+$('input',btn.closest('.maxhr')).value||0);
+  if(v&&(v<100||v>230)){toast('Enter a maximum heart rate between 100 and 230.');return;}
+  lsSet(LS.maxHr,v||null);
+  user.user_metadata={...(user.user_metadata||{}),maxHr:v||null};
+  try{const {error}=await sb.auth.updateUser({data:{maxHr:v||null}});if(error)throw error;toast('Heart rate zones updated.');}
+  catch(e){toast('Zones updated on this device only.');}
+  redrawGraphs();
+}
+function redrawGraphs(){
+  if($('#editDlg').open&&ed&&ed.detail){readEditor();const y=$('#editDlg').scrollTop;drawEditor();$('#editDlg').scrollTop=y;}
+  if($('#viewDlg').open&&viewDetail){const r=rowById($('#viewDlg').dataset.id);if(r)$('#detail').innerHTML=(viewDetail.route?routeSvg(viewDetail.route):'')+graphsHtml(viewDetail,r.data);}
+}
+
+/* ---------- AI analysis ---------- */
+const AI_MODEL='claude-sonnet-5-5';
+const aiKey=()=>lsGet(LS.aiKey)||'';
+const aiModel=()=>lsGet(LS.aiModel)||AI_MODEL;
+const aiBusy=new Set(), aiError={}, aiUnsaved={};
+function aiPrompt(r,detail){
+  const a=r.data, m=maxHrInfo(a), lines=[];
+  const add=(k,v)=>{if(v!==null&&v!==undefined&&v!=='')lines.push(`${k}: ${v}`);};
+  add('Type',TYPES[a.type].label+(a.virtual?' (virtual / indoor)':''));add('Date',`${a.date} ${a.time||''}`.trim());add('Recorded by',a.source);add('Title',a.title);
+  add('Duration',hms(a.duration));add('Distance',kmText(a.distance));add('Average speed (km/h)',a.distance&&a.duration&&(a.distance/a.duration*3.6).toFixed(1));add('Max speed (km/h)',a.maxSpeed&&(a.maxSpeed*3.6).toFixed(1));
+  add('Average heart rate',a.avgHr);add('Max heart rate in this session',a.maxHr);add('Average power (W)',a.avgPower);add('Max power (W)',a.maxPower);add('Average cadence',a.avgCadence);add('Max cadence',a.maxCadence);add('Climb (m)',a.ascent);add('Calories',a.calories);
+  add('Strength sets',setsText(a.sets));add('My notes',a.notes);
+  let t=`SESSION\n${lines.join('\n')}\n`;
+  const z=detail&&zoneTimes(detail,m.max);
+  if(z) t+=`\nHEART RATE ZONES (percent of a ${m.max} bpm maximum${m.assumed?', which is only an ASSUMED figure because I have not entered mine':''}${z.exact?'':'; times approximate'})\n`+z.zones.map(x=>`${x.name} (${x.what}, ${x.range} bpm): ${hms(x.secs)||'0:00'} = ${Math.round(x.share*100)}%`).join('\n')+'\n';
+  const s=detail&&detail.series;
+  if(s&&s.t.length>1){
+    const cols=SERIES.filter(([k])=>s[k]), n=Math.min(60,s.t.length), table=[];
+    for(let i=0;i<n;i++){
+      const from=Math.floor(i*s.t.length/n), to=Math.floor((i+1)*s.t.length/n);
+      table.push([hms(s.t[from])||'0:00',...cols.map(([k,,,mul])=>{const v=s[k].slice(from,to).filter(x=>x!==null);return v.length?Math.round(v.reduce((p,q)=>p+q,0)/v.length*mul*10)/10:'';})].join(','));
+    }
+    t+=`\nOVER TIME (each row is the average from that time to the next)\ntime,${cols.map(c=>`${c[1]} ${c[2]}`).join(',')}\n${table.join('\n')}\n`;
+  }
+  const since=ymd(new Date(dateOf(a.date).getTime()-28*86400000));
+  const recent=rows.filter(x=>x.id!==r.id&&x.data.date>=since&&x.data.date<=a.date).slice(0,20);
+  t+=`\nMY OTHER LOGGED EXERCISE IN THE 28 DAYS BEFORE\n${recent.length?recent.map(x=>`${x.data.date} ${summaryOf(x.data)}`).join('\n'):'None logged (the log may be incomplete).'}\n`;
+  return `You are an experienced, honest endurance and strength coach. Analyse my ${TYPES[a.type].label.toLowerCase()} below and give me feedback.
+
+Cover, in this order, with a heading for each:
+1. Overview: what kind of session this was.
+2. Pacing and effort: how power, heart rate, cadence and speed changed through the session.
+3. Heart rate zones and benefits: for each zone where I spent meaningful time, say how long, what training benefit that zone develops, and what I can realistically expect from this single session compared with doing it regularly over weeks.
+4. What went well and what to improve.
+5. Suggested next session.
+
+Rules: use only the data given and say when something cannot be judged from it (for example, I have not given an FTP, age, weight or resting heart rate). Do not overstate benefits. Speed and elevation in a virtual session are simulated. This is general fitness information, not medical advice; do not diagnose. Write in Australian English, under 500 words, using headings and short bullet points, no tables.
+
+${t}`;
+}
+/* the reply is plain markdown: escape everything first, then format headings, bullets and bold */
+function mdHtml(text){
+  let h='', list='';
+  const close=()=>{if(list){h+=`</${list}>`;list='';}};
+  for(const raw of String(text).split('\n')){
+    const line=esc(raw.trim()).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); let m;
+    if(!line||/^-{3,}$/.test(line)){close();continue;}
+    if((m=line.match(/^#{1,6}\s+(.*)/))){close();h+=`<h4>${m[1]}</h4>`;}
+    else if((m=line.match(/^(?:[-*•]|(\d+)[.)])\s+(.*)/))){const tag=m[1]?'ol':'ul';if(list!==tag){close();list=tag;h+=tag==='ol'?`<ol start="${m[1]}">`:'<ul>';}h+=`<li>${m[2]}</li>`;}
+    else{close();h+=`<p>${line}</p>`;}
+  }
+  close(); return h;
+}
+async function callAi(prompt){
+  const body={model:aiModel(),max_tokens:8000,output_config:{effort:'medium'},messages:[{role:'user',content:prompt}]};
+  const send=async()=>{
+    let res;
+    try{res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':aiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body),signal:AbortSignal.timeout(180000)});}
+    catch(e){throw new Error(e.name==='TimeoutError'?'The AI took too long to reply. Try again.':'Could not reach the AI service. Check the connection.');}
+    return {res,j:await res.json().catch(()=>({}))};
+  };
+  let {res,j}=await send();
+  if(res.status===400&&/effort|output_config/i.test(j.error?.message||'')){delete body.output_config;({res,j}=await send());}   // another model may not take this setting
+  if(!res.ok){
+    const msg=j.error?.message||('HTTP '+res.status);
+    if(res.status===401) throw new Error('The API key was not accepted. Check it in Settings.');
+    if(res.status===404) throw new Error(`The model "${body.model}" was not found. Check the model name in Settings.`);
+    if(res.status===429||res.status===529) throw new Error('The AI service is busy or your limit was reached. Try again shortly. ('+msg+')');
+    throw new Error('The AI service returned an error: '+msg);
+  }
+  const text=(j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('\n').trim();
+  if(!text) throw new Error(j.stop_reason==='refusal'?'The AI declined to answer this one.':'The AI returned no text. Try again.');
+  return text+(j.stop_reason==='max_tokens'?'\n\n*(The reply was cut off.)*':'');
+}
+function drawAi(){
+  const box=$('#ai'); if(!box) return;
+  const id=$('#viewDlg').dataset.id, r=rowById(id); if(!r) return;
+  const ai=aiUnsaved[id]||r.data.ai, busy=aiBusy.has(id), what=TYPES[r.data.type].label.toLowerCase();
+  box.innerHTML=`<div class="lab">AI feedback</div>
+    ${ai?`<div class="aitext">${mdHtml(ai.text)}</div><p class="muted">${esc(ai.model)} · ${new Date(ai.at).toLocaleDateString('en-AU')}${aiUnsaved[id]?' · not saved':''} · General information only, not medical advice.</p>`:''}
+    ${busy?'<p class="busy" role="status">Analysing… this can take up to a minute.</p>':''}
+    ${aiError[id]?`<p class="bad">${esc(aiError[id])}</p>`:''}
+    <div class="btnrow"><button type="button" class="btn primary" id="askAi" ${busy?'disabled':''}>${ai?'Ask again':'Ask AI to analyse this '+(what==='weights'?'session':what)}</button><button type="button" class="btn" id="copyAi">Copy for Claude</button></div>
+    ${aiKey()?'':`<div id="keybox" hidden><label class="f"><span>Anthropic API key (from console.anthropic.com, charged separately from a Claude subscription)</span><input id="aiKeyIn" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label><p class="muted">Kept in this browser only. Use a key just for this, with a spend limit. Or use Copy for Claude and paste into claude.ai instead.</p><button type="button" class="btn" id="saveKey">Save key and analyse</button></div>`}
+    <p class="muted">Sends this exercise's figures, notes, zones and graph averages, plus your last 28 days of exercise summaries. No map points or pictures.</p>
+    <textarea id="aiCopyText" rows="6" readonly hidden></textarea>`;
+}
+async function detailFor(id){
+  if($('#viewDlg').dataset.id===id&&viewDetail!==undefined&&viewLoaded===id) return viewDetail;
+  const {data,error}=await sb.from('activities').select('detail').eq('id',id).single();
+  if(error) throw new Error(sbFail(error));
+  return data&&data.detail;
+}
+async function saveAi(id,ai){
+  for(let tries=0;;tries++){
+    const cur=rowById(id); if(!cur) return;
+    const rev=cur.rev;
+    try{
+      await updateRow(id,rev,{...cur.data,ai});
+      if(ed&&ed.id===id&&ed.rev===rev){ed.rev++;ed.a.ai=ai;}
+      return;
+    }catch(e){ if(!e.conflict||tries) throw e; await loadRows(); }
+  }
+}
+async function runAi(id){
+  if(aiBusy.has(id)||!rowById(id)) return;
+  if(!aiKey()){const k=$('#keybox');if(k){k.hidden=false;$('#aiKeyIn').focus();k.scrollIntoView({block:'nearest'});}return;}
+  aiBusy.add(id); delete aiError[id]; drawAi();
+  try{
+    const detail=await detailFor(id), model=aiModel();
+    const ai={text:await callAi(aiPrompt(rowById(id),detail)),model,at:new Date().toISOString()};
+    try{await saveAi(id,ai);delete aiUnsaved[id];afterChange();}
+    catch(e){aiUnsaved[id]=ai;aiError[id]='The feedback could not be saved: '+e.message;}
+    if(!$('#viewDlg').open||$('#viewDlg').dataset.id!==id) toast('AI feedback is ready.');
+  }catch(e){console.warn(e);aiError[id]=e.message;}
+  aiBusy.delete(id); if($('#viewDlg').dataset.id===id) drawAi();
+}
+async function copyForClaude(id){
+  try{
+    const text=aiPrompt(rowById(id),await detailFor(id));
+    try{await navigator.clipboard.writeText(text);toast('Copied. Paste it into a chat at claude.ai.');}
+    catch(e){const t=$('#aiCopyText');t.hidden=false;t.value=text;t.select();toast('Select all the text in the box and copy it.');}
+  }catch(e){toast(e.message);}
+}
+
+/* ---------- export one exercise as a calendar file ---------- */
+function icsText(r){
+  const a=r.data, esc2=s=>String(s).replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/[,;]/g,'\\$&');
+  const stamp=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,''), day=s=>s.replace(/-/g,'');
+  let when;
+  if(a.time){const start=new Date(`${a.date}T${a.time}:00`);when=[`DTSTART:${stamp(start)}`,`DTEND:${stamp(new Date(start.getTime()+(a.duration||1800)*1000))}`];}
+  else{const n=dateOf(a.date);n.setDate(n.getDate()+1);when=[`DTSTART;VALUE=DATE:${day(a.date)}`,`DTEND;VALUE=DATE:${day(ymd(n))}`];}
+  const desc=[summaryOf(a),a.notes,`${location.origin}${location.pathname}?date=${a.date}`].filter(Boolean).join('\n');
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Exercise Tool//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT',`UID:${r.id}@exercise-tool`,`DTSTAMP:${stamp(new Date())}`,...when,
+    `SUMMARY:${esc2('Exercise: '+titleOf(a))}`,`DESCRIPTION:${esc2(desc)}`,'TRANSP:TRANSPARENT','END:VEVENT','END:VCALENDAR'];
+  /* calendar files wrap lines at 75 bytes; continuation lines start with a space */
+  const enc=new TextEncoder(), fold=l=>{let out='',n=0;for(const c of l){const b=enc.encode(c).length;if(n+b>74){out+='\r\n ';n=1;}out+=c;n+=b;}return out;};
+  return lines.map(fold).join('\r\n')+'\r\n';
+}
+function exportIcs(id){
+  const r=rowById(id); if(!r) return;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([icsText(r)],{type:'text/calendar;charset=utf-8'}));
+  a.download=`exercise-${r.data.date}-${r.data.type}.ics`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('Calendar file downloaded. Open it to add the event.');
+}
+
 
 (async function init(){
   const q=new URLSearchParams(location.search), date=q.get('date');
