@@ -156,15 +156,15 @@ body.reporting{overflow:hidden}
 <script>
 'use strict';
 /* ====== EDIT THESE LINES BEFORE PUBLISHING (or enter them in the page: they are then kept in this browser) ====== */
-const SB_URL='https://lpzityxurqfdvbwbzjri.supabase.co';            // Supabase Project URL, e.g. https://abcdefgh.supabase.co
-const SB_KEY='sb_publishable_-SKgnlUHncxapgb6srp_mw_USF3aa1K';            // Supabase publishable (anon) key - never the secret / service_role key
+const SB_URL='https://wdbtaxrkuflttpmjsbio.supabase.co';            // Supabase Project URL, e.g. https://abcdefgh.supabase.co
+const SB_KEY='sb_publishable_KLD_TY9p-UfYlIbC0EP1RQ_1a7c8Gss';            // Supabase publishable (anon) key - never the secret / service_role key
 const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure application (client) ID for OneDrive
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-27 · exercise tool v1.7 · Garmin sync: activities and daily health';
+const VERSION='2026-11-27 · exercise tool v1.7.1 · own Supabase project';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
-const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v1',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
+const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
 const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}};
 const lsSet=(k,v)=>{try{v===null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
