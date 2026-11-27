@@ -21,3 +21,25 @@ create policy "own activities" on public.activities
 
 revoke all on public.activities from anon;
 grant select, insert, update, delete on public.activities to authenticated;
+
+-- Health records (DEXA, grip strength, VO2 max): run once in Supabase > SQL Editor (safe to run again)
+create table if not exists public.health_records (
+  id          text primary key,
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  local_date  date not null,
+  kind        text not null,
+  data        jsonb not null,
+  rev         integer not null default 1,
+  updated_at  timestamptz not null default now()
+);
+create index if not exists health_records_user_date on public.health_records (user_id, local_date desc);
+
+alter table public.health_records enable row level security;
+drop policy if exists "own health records" on public.health_records;
+create policy "own health records" on public.health_records
+  for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+revoke all on public.health_records from anon;
+grant select, insert, update, delete on public.health_records to authenticated;
