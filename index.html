@@ -89,6 +89,24 @@ figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:spac
 #tip{position:fixed;z-index:9;pointer-events:none;background:var(--ink);color:var(--surface);padding:5px 9px;border-radius:6px;font-size:12.5px;white-space:nowrap}
 #toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}#toast.show{opacity:1}
 @media (max-width:560px){#stats,.metrics{grid-template-columns:1fr 1fr}.addbtn{font-size:12px}.cx img:nth-of-type(n+2){display:none}h1{width:100%}}
+body.reporting{overflow:hidden}
+#report{position:fixed;inset:0;z-index:5;overflow:auto;background:var(--bg);padding:0 10px 30px}
+.rbar{position:sticky;top:0;z-index:1;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px 0;background:var(--bg)}
+.rpage{max-width:900px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.rpage h1{width:auto;margin:0}.rpage h2{margin:22px 0 4px;font-size:18px;border-bottom:2px solid var(--line);padding-bottom:4px}.rpage h3{margin:14px 0 6px;font-size:15px}.rpage p{margin:4px 0 8px}
+.compare th,.compare td{white-space:nowrap;font-variant-numeric:tabular-nums}.compare th[scope=row]{color:var(--ink);font-weight:500;font-size:13px;white-space:normal;min-width:130px}.compare td{font-size:13px}
+.scanrow{display:flex;gap:14px;overflow-x:auto;align-items:flex-start;padding-bottom:6px}.scanrow figure{margin:0;flex:0 0 auto;text-align:center;font-size:12.5px}.scanrow button{border:0;background:none;padding:0}.scanrow img{display:block;height:380px;width:auto;margin:0 auto 4px;border-radius:8px}
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px 18px}
+@media print{
+  :root{--bg:#edf0f3;--surface:#fff;--ink:#15212b;--muted:#5a6773;--line:#d3dae1;--hover:#e8edf1;--data:#2a78d6;--s1:#eb6834;--warn:#b26a00}
+  @page{size:A4;margin:12mm}
+  body.reporting{overflow:visible;background:#fff}body.reporting>:not(#report){display:none!important}
+  #report{position:static;overflow:visible;background:#fff;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .noprint{display:none!important}.rpage{border:0;padding:0;max-width:none}
+  .scrollx,.scanrow{overflow:visible}.scanrow{flex-wrap:wrap}.scanrow img{height:360px}
+  .compare th,.compare td{padding:3px 4px;font-size:11px;white-space:normal}.compare th[scope=row]{min-width:0}
+  .charts{grid-template-columns:1fr 1fr}tr,figure{break-inside:avoid}h2,h3{break-after:avoid}
+}
 </style>
 </head>
 <body>
@@ -125,6 +143,7 @@ figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:spac
 <input type="file" id="fileIn" multiple hidden accept=".fit,.zip,.pdf,image/*,application/octet-stream">
 <input type="file" id="pdfIn" multiple hidden accept=".pdf,application/pdf">
 <input type="file" id="backupIn" hidden accept=".json,application/json">
+<div id="report" hidden></div>
 <div id="tip" hidden></div>
 <div id="toast" role="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3/lib/msal-browser.min.js"></script>
@@ -138,7 +157,7 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-27 · exercise tool v1.5 · Claude API settings, AI reading of health reports, DEXA scan pictures';
+const VERSION='2026-11-27 · exercise tool v1.6 · health trend report with scan images';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
 const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v1',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
@@ -737,7 +756,7 @@ async function importBackup(file){
 
 /* ---------- gate: connect to the database, then sign in ---------- */
 function showGate(mode,msg=''){
-  $('#main').hidden=true; const g=$('#gate'); g.hidden=false;
+  closeReport(); $('#main').hidden=true; const g=$('#gate'); g.hidden=false;
   if(mode==='connect') g.innerHTML=`<form id="connectForm"><h2>Connect the database</h2><p class="muted">From your Supabase project: Project URL and the <b>publishable</b> (anon) key. Kept in this browser only.</p>
     <label class="f"><span>Project URL</span><input id="sbUrl" type="url" placeholder="https://xxxx.supabase.co" required></label>
     <label class="f"><span>Publishable key</span><input id="sbKey" required autocomplete="off" spellcheck="false"></label><p class="bad">${esc(msg)}</p><button class="btn primary">Connect</button></form>`;
@@ -793,7 +812,7 @@ document.addEventListener('click',async e=>{
   const t=e.target.closest('button,[data-close]'); if(!t) return;
   const d=t.dataset;
   if(t.hasAttribute('data-close')) return t.closest('dialog').close();
-  if(healthClick(t)) return;
+  if(reportClick(t)||healthClick(t)) return;
   if(d.add) return openEditor(null,{type:d.add});
   if(d.filter!==undefined){filterType=d.filter;shown=60;return render();}
   if(d.period){period=d.period;return render();}
@@ -1368,7 +1387,7 @@ const healthLine=r=>{const v=r.data.values;
 };
 function renderHealth(){
   const box=$('#health'); if(!box) return;
-  let h=`<div class="hhead"><h2>Health records</h2><div class="btnrow"><button type="button" class="btn" id="impHealth">Import report (PDF)</button><button type="button" class="btn" id="addGrip">Add grip reading</button>${health.length?'<button type="button" class="btn" id="trends">Trends</button>':''}</div></div>`;
+  let h=`<div class="hhead"><h2>Health records</h2><div class="btnrow"><button type="button" class="btn" id="impHealth">Import report (PDF)</button><button type="button" class="btn" id="addGrip">Add grip reading</button>${health.length?'<button type="button" class="btn" id="trends">Trends</button><button type="button" class="btn" id="trendReport">Trend report</button>':''}</div></div>`;
   if(healthState==='setup') h+=`<p class="warnnote">One setup step: in Supabase, open <b>SQL Editor</b>, paste the setup script, run it, then press Check again.</p><div class="btnrow"><button type="button" class="btn primary" id="copySql">Copy setup script</button><button type="button" class="btn" id="healthRetry">Check again</button></div><textarea id="sqlText" rows="6" readonly hidden></textarea>`;
   else if(healthState==='error') h+=`<p class="bad">${esc(healthError)}</p><button type="button" class="btn" id="healthRetry">Try again</button>`;
   else if(healthState==='loading') h+='<p class="muted">Loading…</p>';
@@ -1507,17 +1526,19 @@ function showScan(images,i){
   d.onclose=null; d.showModal();
 }
 /* for a record saved before pictures were kept, or when they could not be read at import */
+async function addScans(id){
+  const f=healthById(id)?.data.file; if(!f) return false;
+  const images=await scanImages(await fileBlob(f)); if(!images.length) return false;
+  const cur=healthById(id); if(!cur) return false;
+  const {data:got,error}=await sb.from('health_records').update({data:{...cur.data,images},rev:cur.rev+1,updated_at:new Date().toISOString()}).eq('id',id).eq('rev',cur.rev).select('id,local_date,kind,data,rev');
+  if(error) throw new Error(sbFail(error));
+  if(!got.length){await loadHealth();throw new Error('This record was changed on another device. Try again.');}
+  health[health.findIndex(x=>x.id===id)]=cleanHealth(got[0]); return true;
+}
 async function fetchScans(){
-  const id=$('#healthViewDlg').dataset.id, r=healthById(id), f=r&&r.data.file, btn=$('#getScans'); if(!f) return;
-  btn.disabled=true; btn.textContent='Getting the pictures…';
+  const id=$('#healthViewDlg').dataset.id, btn=$('#getScans'); btn.disabled=true; btn.textContent='Getting the pictures…';
   try{
-    const images=await scanImages(await fileBlob(f));
-    if(!images.length) throw new Error('No scan pictures were found in this report.');
-    const cur=healthById(id); if(!cur) return;
-    const {data:got,error}=await sb.from('health_records').update({data:{...cur.data,images},rev:cur.rev+1,updated_at:new Date().toISOString()}).eq('id',id).eq('rev',cur.rev).select('id,local_date,kind,data,rev');
-    if(error) throw new Error(sbFail(error));
-    if(!got.length){await loadHealth();throw new Error('This record was changed on another device. Try again.');}
-    health[health.findIndex(x=>x.id===id)]=cleanHealth(got[0]);
+    if(!await addScans(id)) throw new Error('No scan pictures were found in this report.');
     if($('#healthViewDlg').open&&$('#healthViewDlg').dataset.id===id) openHealthView(id);
   }catch(e){toast(e.message||'The pictures could not be read.');btn.disabled=false;btn.textContent='Get scan pictures from the report';}
 }
@@ -1807,15 +1828,15 @@ function trendChart([title,unit,series],recs){
   if(!lines.length) return '';
   const all=lines.flatMap(s=>s.pts), t0=Math.min(...all.map(p=>p.t)), t1=Math.max(...all.map(p=>p.t));
   let lo=Math.min(...all.map(p=>p.v)), hi=Math.max(...all.map(p=>p.v)); const pad=(hi-lo)*.15||Math.max(1,hi*.1); lo=Math.max(0,lo-pad); hi+=pad;
-  const W=560,H=150,x=t=>t1===t0?W/2:44+(t-t0)/(t1-t0)*(W-60), y=v=>H-8-(v-lo)/(hi-lo)*(H-18), n=v=>Math.round(v*10)/10;
+  const W=560,H=150,x=t=>t1===t0?W/2:44+(t-t0)/(t1-t0)*(W-60), y=v=>H-8-(v-lo)/(hi-lo)*(H-18), n=v=>{const k=hi-lo<.5?1000:hi-lo<5?100:10;return Math.round(v*k)/k;};
   const day=d=>dateOf(d).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'2-digit'});
   const first=all.reduce((a,b)=>b.t<a.t?b:a), last=all.reduce((a,b)=>b.t>a.t?b:a);
-  return `<figure class="trend"><figcaption><b>${title} (${unit})</b></figcaption>
-    <div class="legend">${lines.map(s=>{const a=s.pts.reduce((p,q)=>q.t>p.t?q:p), before=s.pts.filter(p=>p.t<a.t).sort((p,q)=>q.t-p.t)[0], ch=before?n(a.v-before.v):null;
+  return `<figure class="trend"><figcaption><b>${title}${unit?` (${unit})`:''}</b></figcaption>
+    <div class="legend">${lines.map(s=>{const a=s.pts.reduce((p,q)=>q.t>p.t?q:p), before=s.pts.filter(p=>p.t<a.t).sort((p,q)=>q.t-p.t)[0], ch=before?Math.round((a.v-before.v)*1000)/1000:null;
       return `<span><i class="s${s.i}"></i>${s.name}: <b>${a.v}</b>${ch===null?'':` <span class="muted">(${ch>0?'+':''}${ch} since ${day(before.d)})</span>`}</span>`;}).join('')}</div>
     <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title} over time">
       ${[lo,(lo+hi)/2,hi].map(v=>`<line class="grid" x1="40" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text x="34" y="${y(v)+4}" text-anchor="end">${n(v)}</text>`).join('')}
-      ${lines.map(s=>{const p=[...s.pts].sort((a,b)=>a.t-b.t);return `<polyline class="s${s.i}" points="${p.map(q=>`${x(q.t)},${y(q.v)}`).join(' ')}"/>${p.map(q=>`<circle class="s${s.i}" cx="${x(q.t)}" cy="${y(q.v)}" r="5"/><circle class="hit" cx="${x(q.t)}" cy="${y(q.v)}" r="11" data-tip="${s.name}, ${day(q.d)}: ${q.v} ${unit}"/>`).join('')}`;}).join('')}
+      ${lines.map(s=>{const p=[...s.pts].sort((a,b)=>a.t-b.t);return `<polyline class="s${s.i}" points="${p.map(q=>`${x(q.t)},${y(q.v)}`).join(' ')}"/>${p.map(q=>`<circle class="s${s.i}" cx="${x(q.t)}" cy="${y(q.v)}" r="5"/><circle class="hit" cx="${x(q.t)}" cy="${y(q.v)}" r="11" data-tip="${s.name}, ${day(q.d)}: ${q.v}${unit?' '+unit:''}"/>`).join('')}`;}).join('')}
     </svg>
     <div class="axis">${t0===t1?`<span></span><span>${day(first.d)} (one test so far)</span><span></span>`:`<span>${day(first.d)}</span><span>${day(last.d)}</span>`}</div></figure>`;
 }
@@ -1824,7 +1845,7 @@ function openTrends(){
   d.innerHTML=`<div class="dhead">Health trends</div><div class="dbody">${Object.entries(KINDS).map(([kind,k])=>{
     const recs=health.filter(r=>r.kind===kind); if(!recs.length) return '';
     return `<h3>${k.label}</h3>${k.charts.map(c=>trendChart(c,recs)).join('')}<table><tr><th>Date</th><th>Results</th></tr>${recs.map(r=>`<tr><td><button type="button" class="linkbtn" data-health="${esc(r.id)}">${fmtDate(r.local_date)}</button></td><td>${esc(healthLine(r))}</td></tr>`).join('')}</table>`;
-  }).join('')||'<p class="muted">No health records yet.</p>'}</div><div class="dfoot"><span class="sp"></span><button type="button" class="btn primary" data-close>Close</button></div>`;
+  }).join('')||'<p class="muted">No health records yet.</p>'}</div><div class="dfoot"><button type="button" class="btn" id="trendReport">Trend report</button><span class="sp"></span><button type="button" class="btn primary" data-close>Close</button></div>`;
   if(!d.open) d.showModal(); d.scrollTop=0;
 }
 function healthClick(t){
@@ -1847,6 +1868,86 @@ function healthClick(t){
 }
 document.addEventListener('change',e=>{if(e.target.id==='pdfIn'){const f=[...e.target.files];e.target.value='';importReports(f);}});
 $('#healthDlg').addEventListener('cancel',e=>{e.preventDefault();$('#healthDlg').close();hd=null;nextHealth();});
+
+/* ---------- health trend report: results by date, charts and scan pictures, for screen, printing or saving ---------- */
+const REPORT_FIGURES={dexa:['bodyFat','fatMass','leanMass','totalMass','visceral','lmi','almi','androidFat','gynoidFat','agRatio','bmd','bmc','bmdSpine','rmr','symmetry','longevity']};
+const tidy=v=>Math.round(v*1000)/1000;
+const shortDay=d=>dateOf(d).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+const signed=v=>v===null?'–':`${v>0?'+':''}${tidy(v)}`;
+/* one row per figure: a column for each of the latest tests, then the change since the test before and since the first */
+function compareTable(rows,recs){
+  const shown=recs.slice(-5);
+  const body=rows.map(([name,get])=>{
+    const have=recs.map(get).filter(v=>v!=null); if(!have.length) return '';
+    const latest=have[have.length-1];
+    return `<tr><th scope="row">${name}</th>${shown.map(r=>`<td>${get(r)??'–'}</td>`).join('')}${recs.length>1?`<td>${signed(have.length>1?latest-have[have.length-2]:null)}</td>`:''}${recs.length>2?`<td>${signed(have.length>1?latest-have[0]:null)}</td>`:''}</tr>`;
+  }).join('');
+  return `<div class="scrollx"><table class="compare"><thead><tr><th>Measure</th>${shown.map(r=>`<th>${shortDay(r.local_date)}</th>`).join('')}${recs.length>1?'<th>Change since previous</th>':''}${recs.length>2?'<th>Change since first</th>':''}</tr></thead><tbody>${body}</tbody></table></div>${recs.length>shown.length?`<p class="muted">The table shows the latest ${shown.length} of ${recs.length} tests. Change since first and the charts use all of them.</p>`:''}`;
+}
+function reportScans(recs){
+  const labels=[...new Set(recs.flatMap(r=>(r.data.images||[]).map(i=>i.label)))].sort((a,b)=>(a==='Body composition scan'?0:1)-(b==='Body composition scan'?0:1));
+  const rows=labels.map(label=>`<h3>${esc(label)}</h3><div class="scanrow">${recs.flatMap(r=>(r.data.images||[]).map((im,i)=>im.label!==label?'':`<figure><button type="button" data-rscan="${esc(r.id)}" data-i="${i}" aria-label="Enlarge ${esc(label)}, ${shortDay(r.local_date)}"><img src="${im.src}" alt="${esc(label)}, ${shortDay(r.local_date)}"></button><figcaption><b>${shortDay(r.local_date)}</b>${r.data.values.bodyFat!=null?`<br>${r.data.values.bodyFat}% fat · ${r.data.values.leanMass??'–'} kg lean`:''}</figcaption></figure>`)).join('')}</div>`).join('');
+  const none=recs.filter(r=>!r.data.images?.length);
+  const missing=none.length?`<p class="muted">No scan pictures for ${none.map(r=>shortDay(r.local_date)).join(', ')}. Pictures come from the report PDF of each scan: import that report to add them.</p>${none.some(r=>r.data.file)?'<button type="button" class="btn noprint" id="reportScansGet">Get missing pictures from saved reports</button>':''}`:'';
+  return `<section><h2>Scan images</h2>${rows}${missing}</section>`;
+}
+function lines(charts,recs){
+  const drawn=charts.filter(c=>recs.filter(r=>c[2].some(([key])=>r.data.values[key]!=null)).length>1).map(c=>trendChart(c,recs));
+  return drawn.length?`<section><h2>${KINDS[recs[0].kind].label}: charts</h2><div class="charts">${drawn.join('')}</div><p class="muted">Charts are shown for measures with results from two or more tests.</p></section>`:'';
+}
+function reportHtml(){
+  const sections=['dexa','grip','vo2'].map(kind=>{
+    const k=KINDS[kind], recs=health.filter(r=>r.kind===kind).sort((a,b)=>a.local_date.localeCompare(b.local_date)); if(!recs.length) return '';
+    const keys=REPORT_FIGURES[kind]||k.fields.map(f=>f[0]);
+    const rows=keys.map(key=>{const f=k.fields.find(x=>x[0]===key);return [`${f[1]}${f[2]?` <small>(${f[2]})</small>`:''}`,r=>r.data.values[key]];});
+    const charts=kind==='dexa'?[...keys.map(key=>{const f=k.fields.find(x=>x[0]===key);return [f[1],f[2],[[key,f[1]]]];}),...k.charts.filter(c=>c[2][0][0]==='laLean'||c[2][0][0]==='llLean')]:k.charts;
+    const regions=kind==='dexa'?REGIONS.flatMap(([p,name])=>[[`${name} fat <small>(kg)</small>`,r=>r.data.values[p+'Fat']],[`${name} lean <small>(kg)</small>`,r=>r.data.values[p+'Lean']]]):[];
+    const hasRegions=regions.some(([,get])=>recs.some(r=>get(r)!=null));
+    return `<section><h2>${k.label}</h2><p class="muted">${recs.length===1?`One test, ${shortDay(recs[0].local_date)}. Changes appear once there is a second.`:`${recs.length} tests, ${shortDay(recs[0].local_date)} to ${shortDay(recs[recs.length-1].local_date)}.`}</p>
+      ${compareTable(rows,recs)}${hasRegions?`<h3>Body regions</h3>${compareTable(regions,recs)}`:''}</section>
+      ${kind==='dexa'?reportScans(recs):''}
+      ${lines(charts,recs)}`;
+  }).join('');
+  return `<div class="rhead"><div><h1>Health trend report</h1><p class="muted">Prepared ${shortDay(todayStr())}</p></div></div>${sections||'<p class="muted">No health records yet.</p>'}<p class="muted">Figures are as saved from each report. Results from different machines or clinics may not be directly comparable.</p>`;
+}
+function openReport(){
+  $$('dialog[open]').forEach(d=>d.close());
+  const box=$('#report'), top=box.hidden?0:box.scrollTop;
+  box.innerHTML=`<div class="rbar noprint"><button type="button" class="btn primary" id="printReport">Print or save as PDF</button><button type="button" class="btn" id="saveReport">Download</button><button type="button" class="btn" id="closeReport">Close</button></div><div class="rpage">${reportHtml()}</div>`;
+  box.hidden=false; document.body.classList.add('reporting'); box.scrollTop=top;
+}
+function closeReport(){const box=$('#report');box.hidden=true;box.innerHTML='';document.body.classList.remove('reporting');$('#tip').hidden=true;}
+/* a single file that opens in any browser, pictures and charts included */
+function downloadReportFile(){
+  const page=$('#report .rpage').cloneNode(true);
+  page.querySelectorAll('button.noprint,.hit').forEach(e=>e.remove());
+  page.querySelectorAll('button').forEach(b=>b.replaceWith(...b.childNodes));
+  const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Health trend report ${todayStr()}</title><style>${$('style').textContent}</style></head><body class="reporting"><div id="report"><div class="rpage">${page.innerHTML}</div></div></body></html>`;
+  const url=URL.createObjectURL(new Blob([html],{type:'text/html'})), a=document.createElement('a');
+  a.href=url; a.download=`health-trend-report-${todayStr()}.html`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+async function reportGetScans(){
+  const btn=$('#reportScansGet'); btn.disabled=true; btn.textContent='Getting the pictures…';
+  const failed=[]; let added=0;
+  for(const r of health.filter(r=>r.kind==='dexa'&&!r.data.images?.length&&r.data.file)){
+    try{if(await addScans(r.id)) added++;else failed.push(`${shortDay(r.local_date)}: no pictures found in the report`);}
+    catch(e){failed.push(`${shortDay(r.local_date)}: ${e.message}`);}
+  }
+  if(!$('#report').hidden) openReport();
+  toast(failed.length?failed.join('  '):`Pictures added to ${added} scan${added===1?'':'s'}.`);
+}
+function reportClick(t){
+  if(t.dataset.rscan!==undefined){showScan(healthById(t.dataset.rscan)?.data.images,+t.dataset.i);return true;}
+  switch(t.id){
+    case 'trendReport':openReport();return true;
+    case 'printReport':window.print();return true;
+    case 'saveReport':downloadReportFile();return true;
+    case 'closeReport':closeReport();return true;
+    case 'reportScansGet':reportGetScans();return true;
+  }
+  return false;
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#report').hidden&&!$('dialog[open]'))closeReport();});
 
 
 (async function init(){
