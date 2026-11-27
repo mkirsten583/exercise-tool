@@ -58,7 +58,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}#choiceDlg{width:min(440px,calc(100v
 .dbody{padding:6px 16px 12px;display:flex;flex-direction:column;gap:10px;align-items:stretch}.dbody p{margin:0}.dbody>.btn{align-self:flex-start}
 .dfoot{display:flex;gap:8px;justify-content:flex-end;padding:10px 16px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--surface)}.sp{flex:1}
 .f{display:flex;flex-direction:column;gap:3px;min-width:0}.f>span,.lab{font-size:12px;color:var(--muted)}.lab{margin-top:4px;font-weight:600}
-input,textarea{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--bg);min-width:0;width:100%;font-size:16px}
+input,textarea,select{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--bg);min-width:0;width:100%;font-size:16px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wide{grid-column:1/-1}
 .dur{display:flex;gap:6px;align-items:center}.dur input{width:76px}
 .drop{border:2px dashed var(--line);border-radius:10px;padding:12px;text-align:center;color:var(--muted)}.drop .btn{margin-top:6px;color:var(--ink)}
@@ -78,7 +78,7 @@ figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:spac
 .maxhr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.maxhr input{width:80px;margin:0 4px}.warnnote{color:var(--warn);margin:6px 0 0}
 .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
 .ai{display:flex;flex-direction:column;gap:8px}.aitext{border:1px solid var(--line);border-radius:10px;padding:4px 14px 10px;background:var(--bg)}.aitext h4{margin:10px 0 4px;font-size:14px}.aitext ul,.aitext ol{margin:4px 0;padding-left:20px}.aitext p{margin:6px 0}
-#keybox{display:flex;flex-direction:column;gap:6px;align-items:flex-start}#keybox .f{align-self:stretch}.busy{color:var(--muted)}
+#keybox,#pastebox{display:flex;flex-direction:column;gap:6px;align-items:flex-start}#keybox .f,#pastebox .f{align-self:stretch}.busy{color:var(--muted)}
 #tip{position:fixed;z-index:9;pointer-events:none;background:var(--ink);color:var(--surface);padding:5px 9px;border-radius:6px;font-size:12.5px;white-space:nowrap}
 #toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}#toast.show{opacity:1}
 @media (max-width:560px){#stats,.metrics{grid-template-columns:1fr 1fr}.addbtn{font-size:12px}.cx img:nth-of-type(n+2){display:none}h1{width:100%}}
@@ -126,9 +126,9 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-27 · exercise tool v1.2 · upload graphs, heart rate zones, AI feedback, calendar export';
+const VERSION='2026-11-27 · exercise tool v1.3 · profile, age-based max heart rate, send to Home Calendar, paste AI review';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
-const LS={sb:'exercise-sb-v1',auth:'exercise-sb-auth-v1',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
+const LS={sb:'exercise-sb-v1',auth:'exercise-sb-auth-v1',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
 const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}};
 const lsSet=(k,v)=>{try{v===null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
@@ -650,7 +650,8 @@ async function openView(id){
     <section id="ai" class="ai"></section>
     <div id="detail"></div>
     ${files.filter(f=>f.kind==='fit').map(f=>`<button type="button" class="btn" data-download="${f.id}">${icon('clip')} ${esc(f.name)}${f.uploaded?'':' (waiting to upload)'}</button>`).join('')}
-    <button type="button" class="btn" id="icsBtn">Export to calendar (.ics)</button>
+    <div class="btnrow"><button type="button" class="btn primary" id="calBtn">Send to Home Calendar</button><button type="button" class="btn" id="icsBtn">Download calendar file (.ics)</button></div>
+    <p id="calMsg" role="status"></p>
     <p class="muted">Drop a .fit file or picture here to add it.</p>
   </div>
   <div class="dfoot"><span class="sp"></span><button type="button" class="btn" id="closeView">Close</button><button type="button" class="btn primary" id="editView">Edit / add files</button></div>`;
@@ -684,7 +685,7 @@ function openSettings(){
     <div class="lab">OneDrive</div><p>${msalAccount?`Signed in as <b>${esc(msalAccount.username)}</b>.`:'Not signed in.'} Folder: <b>${esc(ONEDRIVE_FOLDER)}</b>${odError?`<br><span class="bad">${esc(odError)}</span>`:''}</p>
     ${GRAPH_CLIENT_ID?'':`<label class="f wide"><span>Azure application (client) ID</span><input id="cid" value="${esc(clientId())}" autocomplete="off" spellcheck="false"></label><p class="muted">Redirect URI to register in Azure: <b>${esc(location.origin+location.pathname)}</b></p><button type="button" class="btn" id="saveCid">Save ID</button>`}
     <div class="btnrow"><button type="button" class="btn" id="msIn">${msalAccount?'Sync now':'Sign in with Microsoft'}</button>${msalAccount?'<button type="button" class="btn" id="msOut">Sign out of OneDrive</button>':''}</div>
-    <div class="lab">Heart rate zones</div>${user?maxHrField((user.user_metadata&&user.user_metadata.maxHr)||lsGet(LS.maxHr)):'<p class="muted">Sign in first.</p>'}
+    <div class="lab">Profile and heart rate zones</div>${user?profileHtml():'<p class="muted">Sign in first.</p>'}
     <div class="lab">AI feedback</div>
     <label class="f"><span>Anthropic API key ${aiKey()?'(one is saved in this browser: leave blank to keep it)':''}</span><input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
     <label class="f"><span>Model</span><input id="setModel" value="${esc(aiModel())}" autocomplete="off" spellcheck="false"></label>
@@ -693,6 +694,7 @@ function openSettings(){
     <div class="lab">Backup</div><div class="btnrow"><button type="button" class="btn" id="export">Export all data</button><button type="button" class="btn" id="import">Import a backup</button></div>
     <p class="muted">Version ${VERSION}${c?' · '+esc(c.url):''}</p>
   </div><div class="dfoot"><span class="sp"></span><button type="button" class="btn primary" data-close>Close</button></div>`;
+  showCalc();
   if(!d.open) d.showModal();
 }
 async function exportAll(){
@@ -728,7 +730,7 @@ async function enterApp(u){
   user=u; $('#gate').hidden=true; $('#main').hidden=false;
   const c=lsGet(LS.cache); if(c&&c.user===u.id){rows=c.rows;sortRows();}
   render();
-  if(sb.auth.getUser) sb.auth.getUser().then(({data})=>{if(data&&data.user&&user&&data.user.id===user.id){user=data.user;lsSet(LS.maxHr,data.user.user_metadata?.maxHr||null);redrawGraphs();}}).catch(()=>{});   // picks up zones changed on another device
+  if(sb.auth.getUser) sb.auth.getUser().then(({data})=>{if(data&&data.user&&user&&data.user.id===user.id){user=data.user;lsSet(LS.maxHr,data.user.user_metadata?.maxHr||null);lsSet(LS.profile,data.user.user_metadata?.profile||null);redrawGraphs();}}).catch(()=>{});   // picks up zones changed on another device
   if(await loadRows()){
     syncOneDrive();
     if(wanted){
@@ -744,7 +746,7 @@ async function initDb(){
   if(!window.supabase){showGate('signin','The database library did not load. Check the connection and reload the page.');return;}
   try{sb=window.supabase.createClient(c.url,c.key,{auth:{storageKey:LS.auth,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});}
   catch(e){lsSet(LS.sb,null);showGate('connect',e.message);return;}
-  sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'&&user){user=null;rows=[];loaded=false;lsSet(LS.cache,null);$$('dialog[open]').forEach(d=>d.close());showGate('signin');}});
+  sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'&&user){user=null;rows=[];loaded=false;lsSet(LS.cache,null);lsSet(LS.profile,null);lsSet(LS.maxHr,null);$$('dialog[open]').forEach(d=>d.close());showGate('signin');}});
   const {data}=await sb.auth.getSession();
   if(data.session) await enterApp(data.session.user); else showGate('signin');
 }
@@ -775,6 +777,11 @@ document.addEventListener('click',async e=>{
   if(d.etype){readEditor();ed.a.type=d.etype;return drawEditor();}
   if(d.delset!==undefined){readEditor();ed.a.sets.splice(+d.delset,1);return drawEditor();}
   if(d.savemax!==undefined) return saveMaxHr(t);
+  if(t.id==='saveProfile') return saveProfile();
+  if(t.id==='pasteAi') return showPaste(true);
+  if(t.id==='cancelPaste') return showPaste(false);
+  if(t.id==='savePaste') return savePasted($('#viewDlg').dataset.id);
+  if(t.id==='calBtn') return sendToCalendar($('#viewDlg').dataset.id);
   if(t.id==='icsBtn') return exportIcs($('#viewDlg').dataset.id);
   if(t.id==='askAi') return runAi($('#viewDlg').dataset.id);
   if(t.id==='copyAi') return copyForClaude($('#viewDlg').dataset.id);
@@ -806,6 +813,7 @@ document.addEventListener('click',async e=>{
   }
 });
 document.addEventListener('input',e=>{if(e.target.closest('#editForm')&&!e.target.closest('.maxhr'))ed.dirty=true;});
+document.addEventListener('input',e=>{if(e.target.closest('#profile'))showCalc();});
 document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const m=e.target.closest&&e.target.closest('.maxhr');if(m){e.preventDefault();saveMaxHr($('[data-savemax]',m));}});
 $('#editDlg').addEventListener('cancel',e=>{e.preventDefault();closeEditor();});
 $('#fileIn').addEventListener('change',e=>{const f=[...e.target.files];e.target.value='';handleFiles(f);});
@@ -999,11 +1007,23 @@ function lineChart(s,a,[k,label,unit,mul,avgKey,maxKey]){
     <div class="axis"><span>0:00</span><span>line from ${Math.round(lo)} to ${Math.round(hi)} ${unit}</span><span>${hms(T)}</span></div></figure>`;
 }
 const ZONES=[['Below zone 1','Very easy',0],['Zone 1','Warm up / recovery',50],['Zone 2','Easy endurance',60],['Zone 3','Aerobic / tempo',70],['Zone 4','Threshold',80],['Zone 5','Maximum',90]];
-/* max heart rate: kept with the Supabase user so every device uses the same zones */
+/* profile and max heart rate are kept with the Supabase user so every device gets the same figures */
+const getProfile=()=>(user&&user.user_metadata&&user.user_metadata.profile)||lsGet(LS.profile)||{};
+const enteredMax=()=>+((user&&user.user_metadata&&user.user_metadata.maxHr)||lsGet(LS.maxHr)||0);
+function ageOn(dob,date){
+  if(!/^\d{4}-\d\d-\d\d$/.test(dob||'')) return null;
+  const n=+date.slice(0,4)-+dob.slice(0,4)-(date.slice(5)<dob.slice(5)?1:0);
+  return n>=0&&n<=120?n:null;
+}
+const HR_FORMULAS={tanaka:['208 − 0.7 × age',age=>Math.round(208-0.7*age)],classic:['220 − age',age=>220-age]};
+const formulaOf=p=>HR_FORMULAS[p.formula]?p.formula:'tanaka';
+/* uses the age on the day of the exercise, so older sessions are judged at the age they were done */
 function maxHrInfo(a){
-  const set=+((user&&user.user_metadata&&user.user_metadata.maxHr)||lsGet(LS.maxHr)||0);
-  if(set) return {max:set,assumed:false};
-  return {max:Math.max(180,a.maxHr||0),assumed:true};
+  const set=enteredMax();
+  if(set) return {max:set,source:'entered',assumed:false,note:'your maximum'};
+  const p=getProfile(), age=ageOn(p.dob,a.date||todayStr());
+  if(age!==null){const f=formulaOf(p);return {max:HR_FORMULAS[f][1](age),source:'age',assumed:false,age,note:`estimated from age ${age}, ${HR_FORMULAS[f][0]}`};}
+  return {max:Math.max(180,a.maxHr||0),source:'assumed',assumed:true,note:'assumed'};
 }
 function zoneTimes(detail,max){
   const secs=ZONES.map(()=>0); let exact=true, any=false;
@@ -1019,11 +1039,13 @@ const maxHrField=v=>`<div class="maxhr"><label>Your max heart rate <input type="
 function zonesHtml(detail,a){
   const m=maxHrInfo(a), z=zoneTimes(detail,m.max); if(!z) return '';
   const top=Math.max(...z.zones.map(x=>x.share));
-  return `<figure class="zones"><figcaption><b>Time in heart rate zones</b><span class="muted">based on max ${m.max} bpm</span></figcaption>
+  return `<figure class="zones"><figcaption><b>Time in heart rate zones</b><span class="muted">max ${m.max} bpm (${m.note})</span></figcaption>
     ${z.zones.map((x,i)=>({x,i})).filter(({x,i})=>i>0||x.secs).map(({x})=>`<div class="zrow" data-tip="${x.name}: ${x.range} bpm, ${hms(x.secs)||'0:00'}"><span class="zn"><b>${x.name}</b><small>${x.what} · ${x.range}</small></span><span class="zbar"><i style="width:${(top?x.share/top*100:0).toFixed(1)}%"></i></span><span class="zt">${hms(x.secs)||'0:00'}<small>${Math.round(x.share*100)}%</small></span></div>`).join('')}
-    ${m.assumed?`<p class="warnnote">These zones assume a maximum of ${m.max} bpm. Enter your own for accurate zones.</p>`:''}
+    ${m.assumed?`<p class="warnnote">These zones assume a maximum of ${m.max} bpm. Add your date of birth in Settings, or enter your maximum below.</p>`:''}
+    ${m.source==='age'?`<p class="muted">An age estimate can be 10 bpm or more out. Enter a measured maximum below to override it.</p>`:''}
+    ${m.source!=='assumed'&&a.maxHr>m.max?`<p class="warnnote">This session reached ${a.maxHr} bpm, above the ${m.max} bpm used. Consider entering a higher maximum.</p>`:''}
     ${z.exact?'':'<p class="muted">Approximate: worked out from the smoothed graph. Drop the FIT file onto this exercise again for exact times.</p>'}
-    ${maxHrField(m.assumed?'':m.max)}</figure>`;
+    ${maxHrField(m.source==='entered'?m.max:'')}</figure>`;
 }
 function graphsHtml(detail,a){
   if(!detail) return '';
@@ -1036,13 +1058,52 @@ async function saveMaxHr(btn){
   if(v&&(v<100||v>230)){toast('Enter a maximum heart rate between 100 and 230.');return;}
   lsSet(LS.maxHr,v||null);
   user.user_metadata={...(user.user_metadata||{}),maxHr:v||null};
-  try{const {error}=await sb.auth.updateUser({data:{maxHr:v||null}});if(error)throw error;toast('Heart rate zones updated.');}
+  try{const {error}=await sb.auth.updateUser({data:{maxHr:v||null,profile:getProfile()}});if(error)throw error;toast('Heart rate zones updated.');}
   catch(e){toast('Zones updated on this device only.');}
   redrawGraphs();
 }
 function redrawGraphs(){
   if($('#editDlg').open&&ed&&ed.detail){readEditor();const y=$('#editDlg').scrollTop;drawEditor();$('#editDlg').scrollTop=y;}
   if($('#viewDlg').open&&viewDetail){const r=rowById($('#viewDlg').dataset.id);if(r)$('#detail').innerHTML=(viewDetail.route?routeSvg(viewDetail.route):'')+graphsHtml(viewDetail,r.data);}
+}
+
+/* ---------- profile ---------- */
+const GENDERS={male:'Male',female:'Female',other:'Other'};
+const PROFILE_FIELDS=[['height','Height (cm)',100,230],['weight','Weight (kg)',30,250],['restHr','Resting heart rate (bpm)',25,120],['ftp','Cycling FTP (W), if known',50,600]];
+function profileHtml(){
+  const p=getProfile(), set=enteredMax();
+  const num=(id,label,v,min,max)=>`<label class="f"><span>${label}</span><input id="p_${id}" type="number" inputmode="decimal" step="any" min="${min}" max="${max}" value="${v??''}"></label>`;
+  return `<div class="grid2" id="profile">
+    <label class="f"><span>Date of birth</span><input id="p_dob" type="date" max="${todayStr()}" value="${esc(p.dob||'')}"></label>
+    <label class="f"><span>Gender</span><select id="p_gender"><option value="">Not set</option>${Object.entries(GENDERS).map(([k,l])=>`<option value="${k}" ${p.gender===k?'selected':''}>${l}</option>`).join('')}</select></label>
+    ${PROFILE_FIELDS.map(([k,l,min,max])=>num(k,l,p[k],min,max)).join('')}
+    <label class="f"><span>Max heart rate formula</span><select id="p_formula">${Object.entries(HR_FORMULAS).map(([k,[l]])=>`<option value="${k}" ${formulaOf(p)===k?'selected':''}>${l}</option>`).join('')}</select></label>
+    ${num('max','Measured max heart rate (optional)',set||'',100,230)}
+    <p class="wide" id="p_calc" aria-live="polite"></p>
+  </div><button type="button" class="btn" id="saveProfile">Save profile</button>`;
+}
+function showCalc(){
+  const out=$('#p_calc'); if(!out) return;
+  const age=ageOn($('#p_dob').value,todayStr()), f=formulaOf({formula:$('#p_formula').value}), own=+$('#p_max').value;
+  const est=age===null?null:HR_FORMULAS[f][1](age);
+  out.innerHTML=(age===null?'Enter your date of birth to calculate your maximum heart rate.':`Age <b>${age}</b>. Estimated max heart rate <b>${est} bpm</b>.`)+(own?` Zones use your measured <b>${own} bpm</b>.`:age===null?'':' Zones use the estimate (a measured figure is better).');
+}
+async function saveProfile(){
+  const p={}, dob=$('#p_dob').value, gender=$('#p_gender').value;
+  if(dob){const age=ageOn(dob,todayStr());if(age===null||age<10||age>100){toast('Check the date of birth.');return;}p.dob=dob;}
+  if(gender) p.gender=gender;
+  for(const [k,label,min,max] of [...PROFILE_FIELDS,['max','Max heart rate',100,230]]){
+    const el=$('#p_'+k), v=el.value.trim();
+    if(el.validity.badInput||(v&&!(+v>=min&&+v<=max))){toast(`${label.replace(/,.*| \(.*/g,'')} should be between ${min} and ${max}.`);return;}
+    if(v&&k!=='max') p[k]=+v;
+  }
+  p.formula=$('#p_formula').value;
+  const maxHr=Math.round(+$('#p_max').value)||null;
+  lsSet(LS.profile,p); lsSet(LS.maxHr,maxHr);
+  user.user_metadata={...(user.user_metadata||{}),profile:p,maxHr};
+  try{const {error}=await sb.auth.updateUser({data:{profile:p,maxHr}});if(error)throw error;toast('Profile saved.');}
+  catch(e){toast('Profile saved on this device only.');}
+  redrawGraphs();
 }
 
 /* ---------- AI analysis ---------- */
@@ -1058,8 +1119,11 @@ function aiPrompt(r,detail){
   add('Average heart rate',a.avgHr);add('Max heart rate in this session',a.maxHr);add('Average power (W)',a.avgPower);add('Max power (W)',a.maxPower);add('Average cadence',a.avgCadence);add('Max cadence',a.maxCadence);add('Climb (m)',a.ascent);add('Calories',a.calories);
   add('Strength sets',setsText(a.sets));add('My notes',a.notes);
   let t=`SESSION\n${lines.join('\n')}\n`;
+  const p=getProfile(), age=ageOn(p.dob,a.date), about=[], missing=[];
+  for(const [label,v] of [['Age at this session',age],['Gender',GENDERS[p.gender]],['Height (cm)',p.height],['Weight now (kg)',p.weight],['Resting heart rate (bpm)',p.restHr],['Cycling FTP now (W)',p.ftp]]) if(v!==null&&v!==undefined) about.push(`${label}: ${v}`); else missing.push(label.replace(/ (at|now|\().*/,'').toLowerCase());
+  if(about.length) t+=`\nABOUT ME\n${about.join('\n')}\n`;
   const z=detail&&zoneTimes(detail,m.max);
-  if(z) t+=`\nHEART RATE ZONES (percent of a ${m.max} bpm maximum${m.assumed?', which is only an ASSUMED figure because I have not entered mine':''}${z.exact?'':'; times approximate'})\n`+z.zones.map(x=>`${x.name} (${x.what}, ${x.range} bpm): ${hms(x.secs)||'0:00'} = ${Math.round(x.share*100)}%`).join('\n')+'\n';
+  if(z) t+=`\nHEART RATE ZONES (percent of a ${m.max} bpm maximum${m.assumed?', which is only an ASSUMED figure because I have not entered mine':m.source==='age'?`, which is only an ESTIMATE from my age`:', which I entered'}${z.exact?'':'; times approximate'})\n`+z.zones.map(x=>`${x.name} (${x.what}, ${x.range} bpm): ${hms(x.secs)||'0:00'} = ${Math.round(x.share*100)}%`).join('\n')+'\n';
   const s=detail&&detail.series;
   if(s&&s.t.length>1){
     const cols=SERIES.filter(([k])=>s[k]), n=Math.min(60,s.t.length), table=[];
@@ -1081,7 +1145,7 @@ Cover, in this order, with a heading for each:
 4. What went well and what to improve.
 5. Suggested next session.
 
-Rules: use only the data given and say when something cannot be judged from it (for example, I have not given an FTP, age, weight or resting heart rate). Do not overstate benefits. Speed and elevation in a virtual session are simulated. This is general fitness information, not medical advice; do not diagnose. Write in Australian English, under 500 words, using headings and short bullet points, no tables.
+Rules: use only the data given and say when something cannot be judged from it ${missing.length?`(I have not given: ${missing.join(', ')})`:''}. Do not overstate benefits. Speed and elevation in a virtual session are simulated. This is general fitness information, not medical advice; do not diagnose. Write in Australian English, under 500 words, using headings and short bullet points, no tables.
 
 ${t}`;
 }
@@ -1124,12 +1188,13 @@ function drawAi(){
   const id=$('#viewDlg').dataset.id, r=rowById(id); if(!r) return;
   const ai=aiUnsaved[id]||r.data.ai, busy=aiBusy.has(id), what=TYPES[r.data.type].label.toLowerCase();
   box.innerHTML=`<div class="lab">AI feedback</div>
-    ${ai?`<div class="aitext">${mdHtml(ai.text)}</div><p class="muted">${esc(ai.model)} · ${new Date(ai.at).toLocaleDateString('en-AU')}${aiUnsaved[id]?' · not saved':''} · General information only, not medical advice.</p>`:''}
+    ${ai?`<div class="aitext">${mdHtml(ai.text)}</div><p class="muted">${ai.pasted?'Pasted':esc(ai.model)} · ${new Date(ai.at).toLocaleDateString('en-AU')}${aiUnsaved[id]?' · not saved':''} · General information only, not medical advice.</p>`:''}
     ${busy?'<p class="busy" role="status">Analysing… this can take up to a minute.</p>':''}
     ${aiError[id]?`<p class="bad">${esc(aiError[id])}</p>`:''}
-    <div class="btnrow"><button type="button" class="btn primary" id="askAi" ${busy?'disabled':''}>${ai?'Ask again':'Ask AI to analyse this '+(what==='weights'?'session':what)}</button><button type="button" class="btn" id="copyAi">Copy for Claude</button></div>
+    <div class="btnrow"><button type="button" class="btn primary" id="askAi" ${busy?'disabled':''}>${ai?'Ask again':'Ask AI to analyse this '+(what==='weights'?'session':what)}</button><button type="button" class="btn" id="copyAi">Copy for Claude</button><button type="button" class="btn" id="pasteAi" ${busy?'disabled':''}>Paste AI review</button></div>
+    <div id="pastebox" hidden><label class="f"><span>Paste the review here${ai?' (it replaces the one above)':''}</span><textarea id="aiPasteIn" rows="8" maxlength="30000"></textarea></label><div class="btnrow"><button type="button" class="btn primary" id="savePaste">Save review</button><button type="button" class="btn" id="cancelPaste">Cancel</button></div></div>
     ${aiKey()?'':`<div id="keybox" hidden><label class="f"><span>Anthropic API key (from console.anthropic.com, charged separately from a Claude subscription)</span><input id="aiKeyIn" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label><p class="muted">Kept in this browser only. Use a key just for this, with a spend limit. Or use Copy for Claude and paste into claude.ai instead.</p><button type="button" class="btn" id="saveKey">Save key and analyse</button></div>`}
-    <p class="muted">Sends this exercise's figures, notes, zones and graph averages, plus your last 28 days of exercise summaries. No map points or pictures.</p>
+    <p class="muted">Sends your profile (age, not date of birth), this exercise's figures, notes, zones and graph averages, plus your last 28 days of exercise summaries. No map points or pictures.</p>
     <textarea id="aiCopyText" rows="6" readonly hidden></textarea>`;
 }
 async function detailFor(id){
@@ -1162,6 +1227,17 @@ async function runAi(id){
   }catch(e){console.warn(e);aiError[id]=e.message;}
   aiBusy.delete(id); if($('#viewDlg').dataset.id===id) drawAi();
 }
+function showPaste(on){const b=$('#pastebox');if(!b)return;b.hidden=!on;if(on){$('#aiPasteIn').focus();b.scrollIntoView({block:'nearest'});}else $('#aiPasteIn').value='';}
+async function savePasted(id){
+  const text=$('#aiPasteIn').value.trim(), btn=$('#savePaste');
+  if(!text){toast('Paste the review first.');return;}
+  btn.disabled=true;
+  try{
+    await saveAi(id,{text,pasted:true,at:new Date().toISOString()});
+    delete aiUnsaved[id];delete aiError[id];afterChange();toast('Review saved with the exercise.');
+    if($('#viewDlg').dataset.id===id) drawAi();
+  }catch(e){btn.disabled=false;toast('Not saved: '+e.message);}     /* the pasted text stays in the box */
+}
 async function copyForClaude(id){
   try{
     const text=aiPrompt(rowById(id),await detailFor(id));
@@ -1191,6 +1267,22 @@ function exportIcs(id){
   toast('Calendar file downloaded. Open it to add the event.');
 }
 
+/* ---------- send to the Home Calendar: write the calendar feed now and check this exercise is in it ---------- */
+async function sendToCalendar(id){
+  const btn=$('#calBtn'), say=(h,bad)=>{const o=$('#calMsg');if(o&&$('#viewDlg').dataset.id===id){o.className=bad?'bad':'';o.innerHTML=h;}};
+  if(!clientId()||!msalAccount||odState==='signedout'){
+    say('Sign in to OneDrive first, then press the button again.',true); msSignIn(); return;
+  }
+  btn.disabled=true; say('Sending…');
+  try{
+    await syncOneDrive();
+    if(odState!=='ok') throw new Error(odError||'OneDrive is not connected. Tap the OneDrive pill and try again.');
+    const r=rowById(id), text=await odGetText(ONEDRIVE_FOLDER+'/exercise-calendar.json');
+    if(!r||!text||!JSON.parse(text).activities.some(x=>x.id===id&&x.date===r.data.date)) throw new Error('The calendar file does not show this exercise yet. Try again.');
+    say(`Sent. It shows on <b>${esc(fmtDate(r.data.date))}</b> as an Exercise event. <a href="${CALENDAR_URL}" target="_blank" rel="noopener">Open Home Calendar</a>, sign in if asked, and go to that date.`);
+  }catch(e){console.warn(e);say('Not sent: '+esc(e.message),true);}
+  if(btn) btn.disabled=false;
+}
 
 (async function init(){
   const q=new URLSearchParams(location.search), date=q.get('date');
