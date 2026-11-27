@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Exercise</title>
+<link rel="icon" type="image/png" href="exercise-icon.png">
+<link rel="apple-touch-icon" href="exercise-icon.png">
+<style>
+:root{--bg:#edf0f3;--surface:#fff;--ink:#15212b;--muted:#5a6773;--line:#d3dae1;--hover:#e8edf1;--bad:#b3261e;--ok:#2e7d4f;--warn:#b26a00;--data:#2a78d6;
+  --c-ride:#1f6fd6;--c-walk:#2c7a4b;--c-run:#c2571a;--c-row:#0b7a99;--c-weights:#7c4fbf}
+@media (prefers-color-scheme:dark){:root{--bg:#11161b;--surface:#1a2129;--ink:#e7ecf0;--muted:#94a1ad;--line:#2d3740;--hover:#242e37;--bad:#ff8a80;--ok:#7ad39c;--warn:#f0b85a;--data:#3987e5;
+  --c-ride:#7db4ff;--c-walk:#7fd3a0;--c-run:#f0a070;--c-row:#6cc4e0;--c-weights:#c3a6f0}}
+.t-ride{--k:var(--c-ride)}.t-walk{--k:var(--c-walk)}.t-run{--k:var(--c-run)}.t-row{--k:var(--c-row)}.t-weights{--k:var(--c-weights)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+svg{width:20px;height:20px;flex:none}
+.wrap{max-width:980px;margin:0 auto;padding:14px 14px 60px}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+h1{font-size:22px;margin:0 auto 0 0}h2{margin:0 0 6px;font-size:19px}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 11px;font-size:12.5px}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--muted)}.pill.ok i{background:var(--ok)}.pill.warn i{background:var(--warn)}.pill.bad i{background:var(--bad)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);text-decoration:none;color:inherit}
+.btn:hover{background:var(--hover)}.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}.btn.danger{color:var(--bad)}.btn:disabled{opacity:.5}
+.linkbtn{background:none;border:0;text-decoration:underline;padding:8px 0}
+#addRow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:8px}
+.addbtn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border-radius:12px;border:1px solid var(--line);border-bottom:3px solid var(--k);background:var(--surface);font-weight:600}
+.addbtn svg{width:30px;height:30px;color:var(--k)}.addbtn:hover{background:var(--hover)}
+.hintrow{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;color:var(--muted);margin-bottom:12px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.chips,.typerow,.btnrow{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px}
+.chip svg{width:16px;height:16px;color:var(--k)}.chip.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}.chip.on svg{color:inherit}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0}
+.seg button{border:0;background:transparent;padding:6px 12px}.seg button.on{background:var(--ink);color:var(--surface)}
+#stats,.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}.stat span{display:block;font-size:12px;color:var(--muted)}.stat b{font-size:19px}
+.ctitle{font-size:12.5px;color:var(--muted);margin:14px 0 4px}
+#weeks svg{width:auto;height:170px;max-width:100%;display:block}#weeks text{fill:var(--muted);font-size:11px}
+#weeks .grid{stroke:var(--line);stroke-width:1}#weeks .bar{fill:var(--data)}#weeks .hit{fill:transparent}
+#list h3{font-size:13px;color:var(--muted);margin:16px 0 6px;scroll-margin-top:8px}
+.card{display:flex;gap:12px;width:100%;text-align:left;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--k);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.card:hover{background:var(--hover)}.card .ic{color:var(--k)}.card .ic svg{width:28px;height:28px}
+.cb{flex:1;min-width:0;display:flex;flex-direction:column}.c1{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.c2{display:flex;flex-wrap:wrap;column-gap:14px;font-variant-numeric:tabular-nums}.c3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cx{display:flex;gap:6px;align-items:center;color:var(--muted)}.cx img{width:46px;height:46px;object-fit:cover;border-radius:6px}.cx i{display:flex}
+.over{outline:3px dashed var(--data);outline-offset:-3px}
+.muted{color:var(--muted)}.bad{color:var(--bad)}.empty{color:var(--muted);text-align:center;padding:30px 10px}
+#err{border:1px solid var(--bad);color:var(--bad);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:var(--surface)}
+#gate{max-width:420px;margin:8vh auto;padding:0 14px}#gate form{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px}#gate p{margin:0}
+dialog{width:min(640px,calc(100vw - 16px));max-height:calc(100dvh - 24px);padding:0;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);overscroll-behavior:contain}
+dialog::backdrop{background:rgba(0,0,0,.45)}#choiceDlg{width:min(440px,calc(100vw - 24px))}
+.dhead{display:flex;gap:10px;align-items:center;font-size:17px;font-weight:650;padding:14px 16px 8px}.dhead small{display:block;font-size:12.5px;font-weight:400;color:var(--muted)}.dhead .ic{color:var(--k)}.dhead .ic svg{width:32px;height:32px}
+.dbody{padding:6px 16px 12px;display:flex;flex-direction:column;gap:10px;align-items:stretch}.dbody p{margin:0}.dbody>.btn{align-self:flex-start}
+.dfoot{display:flex;gap:8px;justify-content:flex-end;padding:10px 16px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--surface)}.sp{flex:1}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}.f>span,.lab{font-size:12px;color:var(--muted)}.lab{margin-top:4px;font-weight:600}
+input,textarea{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--bg);min-width:0;width:100%;font-size:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wide{grid-column:1/-1}
+.dur{display:flex;gap:6px;align-items:center}.dur input{width:76px}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:12px;text-align:center;color:var(--muted)}.drop .btn{margin-top:6px;color:var(--ink)}
+.setrow{display:grid;grid-template-columns:minmax(0,3fr) repeat(3,minmax(0,1fr)) 34px;gap:5px;margin-bottom:5px}
+.x{border:1px solid var(--line);background:transparent;border-radius:8px;width:34px;height:34px;font-size:18px;line-height:1;flex:none}
+.atts{display:flex;flex-direction:column;gap:5px}.att{display:flex;gap:10px;align-items:center}.att img{width:44px;height:44px;object-fit:cover;border-radius:6px}.att span{flex:1;min-width:0;overflow-wrap:anywhere}
+.photos{display:flex;flex-wrap:wrap;gap:8px}.photos button{padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg)}.photos img{display:block;height:110px;max-width:220px;object-fit:cover}
+#photoDlg{width:auto;max-width:calc(100vw - 16px)}#photoDlg>img{display:block;max-width:100%;max-height:calc(100dvh - 100px);margin:auto;min-width:240px;object-fit:contain}#photoDlg>p{padding:8px 16px;margin:0}
+table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line)}th{font-size:12px;color:var(--muted)}
+.notes{white-space:pre-wrap}
+.route{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}.route polyline{fill:none;stroke:var(--data);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}.route circle{fill:var(--ink);stroke:var(--surface);stroke-width:2}
+.line{margin:0 0 10px}.line figcaption{display:flex;justify-content:space-between;font-size:12.5px}.plot{position:relative;border-bottom:1px solid var(--line);touch-action:pan-y}.plot svg{display:block;width:100%;height:100px}
+.plot path{fill:none;stroke:var(--data);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}.cross{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);pointer-events:none}
+#tip{position:fixed;z-index:9;pointer-events:none;background:var(--ink);color:var(--surface);padding:5px 9px;border-radius:6px;font-size:12.5px;white-space:nowrap}
+#toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}#toast.show{opacity:1}
+@media (max-width:560px){#stats,.metrics{grid-template-columns:1fr 1fr}.addbtn{font-size:12px}.cx img:nth-of-type(n+2){display:none}h1{width:100%}}
+</style>
+</head>
+<body>
+<div id="gate" hidden></div>
+<div class="wrap" id="main" hidden>
+  <header>
+    <h1>Exercise</h1>
+    <button type="button" class="pill" id="dbPill"></button>
+    <button type="button" class="pill" id="odPill"></button>
+    <a class="btn" id="calLink" target="_blank" rel="noopener">Calendar</a>
+    <button type="button" class="btn" id="setBtn">Settings</button>
+  </header>
+  <div id="err" hidden></div>
+  <div id="addRow"></div>
+  <div class="hintrow"><span>Tap to log an exercise, or drop a .fit file anywhere (onto an exercise to add it there).</span><button type="button" class="btn" id="importBtn">Import .fit files</button></div>
+  <section class="panel">
+    <div class="chips" id="filters"></div>
+    <div class="seg" id="period"><button type="button" data-period="week">Week</button><button type="button" data-period="month">Month</button><button type="button" data-period="year">Year</button><button type="button" data-period="all">All</button></div>
+    <div id="stats"></div>
+    <div class="ctitle">Minutes per week, last 12 weeks</div>
+    <div id="weeks"></div>
+  </section>
+  <div id="list"></div>
+</div>
+<dialog id="editDlg"></dialog>
+<dialog id="viewDlg"></dialog>
+<dialog id="setDlg"></dialog>
+<dialog id="photoDlg"></dialog>
+<dialog id="choiceDlg"></dialog>
+<input type="file" id="fileIn" multiple hidden accept=".fit,.zip,image/*,application/octet-stream">
+<input type="file" id="backupIn" hidden accept=".json,application/json">
+<div id="tip" hidden></div>
+<div id="toast" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3/lib/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+'use strict';
+/* ====== EDIT THESE LINES BEFORE PUBLISHING (or enter them in the page: they are then kept in this browser) ====== */
+const SB_URL='';            // Supabase Project URL, e.g. https://abcdefgh.supabase.co
+const SB_KEY='';            // Supabase publishable (anon) key - never the secret / service_role key
+const GRAPH_CLIENT_ID='';   // Azure application (client) ID for OneDrive
+const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
+const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
+/* ================================================================================================================ */
+const VERSION='2026-11-27 · exercise tool v1';
+/* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
+const LS={sb:'exercise-sb-v1',auth:'exercise-sb-auth-v1',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1'};
+const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
+const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}};
+const lsSet=(k,v)=>{try{v===null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
+
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+const dateOf=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
+const todayStr=()=>ymd(new Date());
+const mondayOf=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-(x.getDay()+6)%7);return x;};
+const fmtDate=s=>dateOf(s).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+const TYPES={ride:{label:'Ride',plural:'Rides'},walk:{label:'Walk',plural:'Walks'},run:{label:'Run',plural:'Runs'},row:{label:'Row',plural:'Rows'},weights:{label:'Weights',plural:'Weights'}};
+const ICONS={
+  ride:'<circle cx="5.5" cy="17" r="3.8"/><circle cx="18.5" cy="17" r="3.8"/><path d="M5.5 17 9 10h7l2.500 7M9 10l3.500 7L16 10M8 7h3M16 10l-1.200-3.500H17"/>',
+  walk:'<circle cx="13" cy="4" r="1.8"/><path d="M12.500 8 11 14l3 3 1 5M11 14l-2.500 8M12.500 8 9 10.500V13M12.500 8l2.500 3.500 3 1"/>',
+  run:'<circle cx="15" cy="4" r="1.8"/><path d="m13 8-3 5 4 3-1.500 6M10 13l-2 4H3.500M13 8l-4 .500L7 11.500M13 8l2.500 4H20"/>',
+  row:'<circle cx="9" cy="6" r="1.8"/><path d="m9 9.500 2 5 5-1.500M7.500 16l3.500-1.500M5 10l15 9M2 20c2 1.5 3.5 1.5 5 0s3-1.5 5 0 3 1.5 5 0 3-1.500 5 0"/>',
+  weights:'<path d="M6.500 6.500v11M17.500 6.500v11M3.500 9v6M20.500 9v6M6.500 12h11"/>',
+  clip:'<path d="m21 11-8.500 8.500a5 5 0 0 1-7-7L14 4a3.300 3.300 0 0 1 4.700 4.700L10 17.300a1.700 1.700 0 0 1-2.400-2.400L15 7.500"/>',
+  image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.500" cy="8.500" r="1.500"/><path d="m21 15-5-5L5 21"/>',
+};
+const icon=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
+
+/* ---------- formatting ---------- */
+const hms=s=>{if(!s)return '';s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`;};
+const durText=s=>{const m=Math.round((s||0)/60);return m<60?`${m} min`:`${Math.floor(m/60)} h ${String(m%60).padStart(2,'0')} min`;};
+const kmText=m=>m?(m/1000).toFixed(m<100000?1:0)+' km':'';
+function paceText(a){
+  if(!a.duration||!a.distance) return null;
+  const v=a.distance/a.duration, mm=s=>{s=Math.round(s);return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
+  if(a.type==='ride') return ['Avg speed',(v*3.6).toFixed(1)+' km/h'];
+  if(a.type==='row') return ['Avg split',mm(500/v)+' /500 m'];
+  if(a.type==='weights') return null;
+  return ['Avg pace',mm(1000/v)+' /km'];
+}
+const setsText=s=>(s||[]).map(x=>`${x.name} ${x.sets}×${x.reps}${x.weight?` @ ${x.weight} kg`:''}`).join(', ');
+const titleOf=a=>a.title||((a.virtual?'Virtual ':'')+TYPES[a.type].label.toLowerCase()).replace(/^./,c=>c.toUpperCase());
+/* one line per exercise: this is what appears in the calendar event */
+function summaryOf(a){
+  const p=paceText(a), bits=[];
+  if(a.distance) bits.push(kmText(a.distance));
+  if(a.duration) bits.push(durText(a.duration));
+  if(p) bits.push(p[1]);
+  if(a.avgPower) bits.push(a.avgPower+' W');
+  if(a.avgHr) bits.push(a.avgHr+' bpm');
+  if(a.ascent) bits.push(a.ascent+' m climb');
+  if(a.calories) bits.push(a.calories+' cal');
+  if(a.sets&&a.sets.length) bits.push(setsText(a.sets));
+  return titleOf(a)+(bits.length?': '+bits.join(', '):'');
+}
+
+/* ---------- state ---------- */
+let sb=null, user=null, rows=[], loaded=false, loadError='';
+let filterType='', period='month', shown=60;
+let msalApp=null, msalAccount=null, odState='off', odError='';
+const clientId=()=>GRAPH_CLIENT_ID||lsGet(LS.client)||'';
+const sbConfig=()=>{if(SB_URL&&SB_KEY)return{url:SB_URL,key:SB_KEY};return lsGet(LS.sb);};
+const sortRows=()=>rows.sort((a,b)=>(b.data.date+(b.data.time||'')).localeCompare(a.data.date+(a.data.time||'')));
+const rowById=id=>rows.find(r=>r.id===id);
+
+let toastTimer;
+/* the toast and tooltip live inside whichever dialog is on top; recreate them if that dialog was redrawn */
+function floater(id){let e=document.getElementById(id);if(!e){e=document.createElement('div');e.id=id;document.body.appendChild(e);}return e;}
+function toast(msg){const t=floater('toast');t.setAttribute('role','status');t.textContent=msg;t.classList.add('show');([...document.querySelectorAll('dialog[open]')].pop()||document.body).appendChild(t);clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),4500);}
+function ask(title,msg,buttons){
+  return new Promise(resolve=>{
+    const d=$('#choiceDlg');
+    d.innerHTML=`<div class="dhead">${esc(title)}</div><div class="dbody"><p>${esc(msg)}</p></div><div class="dfoot">${buttons.map((b,i)=>`<button type="button" class="btn ${i===0?'primary':''}" data-choice="${i}">${esc(b)}</button>`).join('')}</div>`;
+    const done=v=>{d.close();d.onclick=null;d.oncancel=null;resolve(v);};
+    d.onclick=e=>{const b=e.target.closest('[data-choice]');if(b)done(+b.dataset.choice);};
+    d.oncancel=e=>{e.preventDefault();done(buttons.length-1);};
+    d.showModal();
+  });
+}
+
+/* ---------- files waiting for OneDrive are held on this device (IndexedDB) ---------- */
+let idbP=null;
+const idb=()=>idbP||(idbP=new Promise((res,rej)=>{const r=indexedDB.open('exercise-tool-files',1);r.onupgradeneeded=()=>r.result.createObjectStore('f');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));
+async function idbDo(mode,fn){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('f',mode),q=fn(t.objectStore('f'));t.oncomplete=()=>res(q&&q.result);t.onerror=t.onabort=()=>rej(t.error);});}
+const idbPut=(k,v)=>idbDo('readwrite',s=>s.put(v,k));
+const idbGet=k=>idbDo('readonly',s=>s.get(k));
+const idbDel=k=>idbDo('readwrite',s=>s.delete(k));
+
+/* ---------- Supabase ---------- */
+function badKey(k){
+  if(/^sb_secret_/.test(k)) return true;
+  try{return JSON.parse(atob(k.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role==='service_role';}catch(e){return false;}
+}
+const sbFail=e=>{
+  const m=e.message||String(e);
+  if(/relation .* does not exist|schema cache|Could not find the table/i.test(m)) return 'The database table is missing. Run exercise-tool-setup.sql in the Supabase SQL Editor.';
+  if(/permission denied/i.test(m)) return 'The database refused access. Run exercise-tool-setup.sql again (it grants access to signed-in users).';
+  if(/fetch/i.test(m)) return 'Could not reach Supabase. Check the connection. A free project pauses after about a week unused: open supabase.com and choose Restore.';
+  return m;
+};
+async function loadRows(){
+  if(!sb||!user) return false;
+  try{
+    const all=[];
+    for(let from=0;;from+=1000){
+      const {data,error}=await sb.from('activities').select('id,data,rev').order('local_date',{ascending:false}).order('id').range(from,from+999);
+      if(error) throw error;
+      all.push(...data); if(data.length<1000) break;
+    }
+    rows=all; sortRows(); loaded=true; loadError=''; lsSet(LS.cache,{user:user.id,rows}); render(); return true;
+  }catch(e){console.error(e);loadError=sbFail(e);render();return false;}
+}
+const rowFields=a=>({local_date:a.date,type:a.type,data:a,updated_at:new Date().toISOString()});
+async function insertRow(id,a,detail){
+  const {data,error}=await sb.from('activities').insert({id,...rowFields(a),detail:detail||null,rev:1}).select('id,data,rev').single();
+  if(error) throw new Error(sbFail(error));
+  rows.push(data); sortRows();
+}
+/* the rev check stops one device silently overwriting another device's change */
+async function updateRow(id,rev,a,detail){
+  const patch={...rowFields(a),rev:rev+1}; if(detail!==undefined) patch.detail=detail;
+  const {data,error}=await sb.from('activities').update(patch).eq('id',id).eq('rev',rev).select('id,data,rev');
+  if(error) throw new Error(sbFail(error));
+  if(!data.length){const e=new Error('This exercise was changed or deleted on another device. The latest version has been loaded: please make your change again.');e.conflict=true;throw e;}
+  const i=rows.findIndex(r=>r.id===id); if(i>=0) rows[i]=data[0]; else rows.push(data[0]); sortRows();
+}
+const afterChange=()=>{lsSet(LS.cache,{user:user.id,rows});render();syncOneDrive();};
+
+/* ---------- OneDrive ---------- */
+const GRAPH_SCOPES=['Files.ReadWrite','User.Read'];
+const encPath=p=>p.split('/').map(encodeURIComponent).join('/');
+const itemUrl=p=>'https://graph.microsoft.com/v1.0/me/drive/root:/'+encPath(p);
+async function graphToken(){
+  if(!msalApp||!msalAccount) return null;
+  try{return (await msalApp.acquireTokenSilent({scopes:GRAPH_SCOPES,account:msalAccount})).accessToken;}catch(e){return null;}
+}
+async function graph(url,opts={}){
+  const t=await graphToken(); if(!t){odState='signedout';renderPills();throw Object.assign(new Error('Sign in to OneDrive again'),{reauth:true});}
+  return fetch(url,{...opts,headers:{...(opts.headers||{}),Authorization:'Bearer '+t}});
+}
+async function odUpload(path,blob){
+  if(blob.size<=4*1024*1024){
+    const r=await graph(itemUrl(path)+':/content',{method:'PUT',headers:{'Content-Type':blob.type||'application/octet-stream'},body:blob});
+    if(!r.ok) throw new Error('OneDrive save failed (HTTP '+r.status+')'); return;
+  }
+  const s=await graph(itemUrl(path)+':/createUploadSession',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({item:{'@microsoft.graph.conflictBehavior':'replace'}})});
+  if(!s.ok) throw new Error('Could not start the upload (HTTP '+s.status+')');
+  const url=(await s.json()).uploadUrl, chunk=3276800;
+  for(let a=0;a<blob.size;a+=chunk){
+    const b=Math.min(a+chunk,blob.size);
+    const r=await fetch(url,{method:'PUT',headers:{'Content-Range':`bytes ${a}-${b-1}/${blob.size}`},body:blob.slice(a,b)});
+    if(!r.ok) throw new Error('Upload interrupted (HTTP '+r.status+')');
+  }
+}
+async function odGetText(path){
+  const r=await graph(itemUrl(path)+':/content'); if(r.status===404) return null;
+  if(!r.ok) throw new Error('OneDrive read failed (HTTP '+r.status+')'); return r.text();
+}
+async function fileBlob(f){
+  const local=await idbGet(f.id).catch(()=>null); if(local) return local.blob;
+  if(!f.uploaded) throw new Error('This file is still waiting to upload from the device it was added on.');
+  if(!msalAccount) throw new Error('Sign in to OneDrive to open this file.');
+  const r=await graph(itemUrl(f.path)); if(!r.ok) throw new Error('The file was not found in OneDrive (HTTP '+r.status+')');
+  const url=(await r.json())['@microsoft.graph.downloadUrl']; const d=await fetch(url);
+  if(!d.ok) throw new Error('Download failed (HTTP '+d.status+')'); return d.blob();
+}
+const calendarFeed=()=>[...rows].reverse().map(r=>{const a=r.data;return{id:r.id,date:a.date,time:a.time||'',type:a.type,mins:Math.round((a.duration||0)/60),summary:summaryOf(a)};});
+/* upload anything waiting, then refresh the calendar feed and the backup copy. Runs one at a time. */
+let odChain=Promise.resolve();
+function syncOneDrive(){odChain=odChain.then(doSync).catch(e=>{console.error(e);if(!e.reauth){odState='error';odError=e.message;}renderPills();});return odChain;}
+async function doSync(){
+  if(!msalAccount||!loaded||!user) return;     // never write the feed from a list that has not been read from the database
+  odState='syncing';renderPills();
+  let changed=false;
+  for(const r of [...rows]){
+    const waiting=(r.data.files||[]).filter(f=>!f.uploaded); if(!waiting.length) continue;
+    const done=[];
+    for(const f of waiting){const q=await idbGet(f.id).catch(()=>null); if(!q) continue; await odUpload(f.path,q.blob); done.push(f.id);}
+    if(!done.length) continue;
+    const cur=rowById(r.id); if(!cur) continue;
+    const a={...cur.data,files:cur.data.files.map(f=>done.includes(f.id)?{...f,uploaded:true}:f)};
+    try{
+      await updateRow(cur.id,cur.rev,a);
+      if(ed&&ed.id===cur.id&&ed.rev===cur.rev){ed.rev++;for(const f of ed.a.files||[]) if(done.includes(f.id)) f.uploaded=true;}   // an open editor stays current
+      for(const id of done) await idbDel(id);changed=true;
+    }
+    catch(e){if(e.conflict){await loadRows();}else throw e;}   // blobs are kept, so the next sync tries again
+  }
+  const feed=calendarFeed(), path=ONEDRIVE_FOLDER+'/exercise-calendar.json';
+  const old=await odGetText(path); let same=false;
+  try{same=old!==null&&JSON.stringify(JSON.parse(old).activities)===JSON.stringify(feed);}catch(e){}
+  if(!same){
+    const stamp=new Date().toISOString();
+    await odUpload(path,new Blob([JSON.stringify({app:'exercise-tool',version:1,updated:stamp,activities:feed},null,1)],{type:'application/json'}));
+    await odUpload(ONEDRIVE_FOLDER+'/exercise-backup.json',new Blob([JSON.stringify({app:'exercise-tool',version:1,updated:stamp,rows:rows.map(r=>({id:r.id,data:r.data}))})],{type:'application/json'}));
+  }
+  odState='ok';odError='';
+  if(changed){lsSet(LS.cache,{user:user.id,rows});render();}
+  renderPills();
+}
+const rememberHint=a=>{if(a&&a.username)lsSet(LS.hint,{u:a.username,n:a.name||''});};
+async function msSignIn(){
+  if(!clientId()){openSettings();toast('Enter the Azure client ID first.');return;}
+  if(!msalApp){await initOneDrive();if(!msalApp){toast('The Microsoft sign-in library did not load.');return;}}
+  const h=lsGet(LS.hint), req={scopes:GRAPH_SCOPES}; if(h&&h.u) req.loginHint=h.u;
+  try{
+    if(IN_FRAME){const r=await msalApp.loginPopup(req);msalAccount=r.account;rememberHint(r.account);odState='ok';renderPills();await syncOneDrive();return;}
+    lsSet(LS.autotry,Date.now()); await msalApp.loginRedirect(req);
+  }catch(e){toast('Sign-in was not completed: '+e.message);}
+}
+async function initOneDrive(){
+  if(!clientId()||!window.msal||msalApp){renderPills();return;}
+  try{
+    const app=new msal.PublicClientApplication({auth:{clientId:clientId(),authority:'https://login.microsoftonline.com/consumers',redirectUri:location.origin+location.pathname},cache:{cacheLocation:'localStorage'}});
+    await app.initialize();
+    let rr=null; try{rr=await app.handleRedirectPromise();}catch(e){console.error(e);toast('Microsoft sign-in problem: '+e.message);}
+    for(const st of [localStorage,sessionStorage]) try{Object.keys(st).filter(k=>k.includes(clientId())&&/interaction\.status/i.test(k)).forEach(k=>st.removeItem(k));}catch(e){}
+    msalApp=app;
+    const hint=lsGet(LS.hint);
+    msalAccount=(rr&&rr.account)||app.getAllAccounts().find(a=>!hint||a.username===hint.u)||null;   // other tools on this site have their own accounts cached
+    if(msalAccount&&await graphToken()){rememberHint(msalAccount);odState='ok';}
+    else if(hint){
+      odState='signedout';
+      try{const r=await app.ssoSilent({scopes:GRAPH_SCOPES,loginHint:hint.u});msalAccount=r.account;odState='ok';}
+      catch(e){
+        if(!IN_FRAME&&!document.querySelector('dialog[open]')&&Date.now()-(lsGet(LS.autotry)||0)>5*60*1000){lsSet(LS.autotry,Date.now());await app.loginRedirect({scopes:GRAPH_SCOPES,loginHint:hint.u});return;}
+      }
+    } else odState='off';
+  }catch(e){console.error(e);odState='error';odError=e.message;}
+  renderPills(); syncOneDrive();
+}
+
+/* ---------- rendering ---------- */
+function renderPills(){
+  const od=$('#odPill'); if(!od) return;
+  const waiting=rows.reduce((n,r)=>n+(r.data.files||[]).filter(f=>!f.uploaded).length,0);
+  const w=waiting?` (${waiting} file${waiting>1?'s':''} waiting)`:'';
+  let cls='warn',tx,title='';
+  if(!clientId()){tx='Set up OneDrive'+w;}
+  else if(odState==='ok'&&msalAccount){cls=waiting?'warn':'ok';tx='OneDrive up to date';if(waiting)tx='OneDrive'+w;}
+  else if(odState==='syncing'){tx='Saving to OneDrive…';}
+  else if(odState==='error'){cls='bad';tx='OneDrive problem – tap';title=odError;}
+  else tx=(lsGet(LS.hint)?'Reconnect OneDrive':'Sign in to OneDrive')+w;
+  od.className='pill '+cls; od.innerHTML=`<i></i>${esc(tx)}`; od.title=title;
+  const db=$('#dbPill');
+  db.className='pill '+(loadError?'bad':loaded?'ok':'warn');
+  db.innerHTML=`<i></i>${loadError?'Database problem – tap':loaded?'Database connected':'Connecting…'}`;
+}
+function periodRange(){
+  const now=new Date();
+  if(period==='week') return [ymd(mondayOf(now)),'This week'];
+  if(period==='month') return [ymd(new Date(now.getFullYear(),now.getMonth(),1)),'This month'];
+  if(period==='year') return [ymd(new Date(now.getFullYear(),0,1)),'This year'];
+  return ['0000-00-00','All time'];
+}
+function renderStats(){
+  const [from]=periodRange(), to=period==='all'?'9999-12-31':todayStr();
+  const list=rows.map(r=>r.data).filter(a=>a.date>=from&&a.date<=to&&(!filterType||a.type===filterType));
+  const sum=k=>list.reduce((n,a)=>n+(a[k]||0),0);
+  $('#stats').innerHTML=[['Sessions',list.length],['Time',durText(sum('duration'))],['Distance',(sum('distance')/1000).toFixed(1)+' km'],['Calories',Math.round(sum('calories')).toLocaleString('en-AU')]]
+    .map(([k,v])=>`<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
+}
+function renderWeeks(){
+  const end=mondayOf(new Date()), weeks=[];
+  for(let i=11;i>=0;i--){const d=new Date(end);d.setDate(d.getDate()-7*i);weeks.push({start:ymd(d),d,mins:0,n:0});}
+  for(const r of rows){const a=r.data;if(filterType&&a.type!==filterType)continue;const k=ymd(mondayOf(dateOf(a.date)));const w=weeks.find(w=>w.start===k);if(w){w.mins+=(a.duration||0)/60;w.n++;}}
+  const peak=Math.max(...weeks.map(w=>w.mins));
+  const box=$('#weeks');
+  if(!peak){box.innerHTML=`<p class="muted">No timed ${filterType?TYPES[filterType].label.toLowerCase()+' ':''}exercise in the last 12 weeks.</p>`;return;}
+  const step=[15,30,60,120,240,480,960].find(s=>peak/s<=4)||1920, top=Math.ceil(peak/step)*step;
+  const W=Math.max(300,box.clientWidth||700),H=170,L=44,B=20,T=8,cw=(W-L)/12,bw=Math.min(28,cw-6),y=v=>T+(H-T-B)*(1-v/top);
+  let s=`<svg width="${W}" height="${H}" role="img" aria-label="Minutes of exercise per week, last 12 weeks">`;
+  for(let v=0;v<=top;v+=step) s+=`<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" class="grid"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`;
+  weeks.forEach((w,i)=>{
+    const x=L+i*cw+(cw-bw)/2, yy=y(w.mins), h=H-B-yy, rr=Math.min(4,h,bw/2);
+    if(h>0) s+=`<path class="bar" d="M${x} ${H-B}V${yy+rr}Q${x} ${yy} ${x+rr} ${yy}H${x+bw-rr}Q${x+bw} ${yy} ${x+bw} ${yy+rr}V${H-B}Z"/>`;
+    const lbl=w.d.getDate()+'/'+(w.d.getMonth()+1);
+    if(cw>=34||i%2===1) s+=`<text x="${x+bw/2}" y="${H-5}" text-anchor="middle">${lbl}</text>`;
+    s+=`<rect class="hit" x="${L+i*cw}" y="0" width="${cw}" height="${H}" data-tip="Week of ${lbl}: ${durText(w.mins*60)}, ${w.n} session${w.n===1?'':'s'}"/>`;
+  });
+  box.innerHTML=s+'</svg>';
+}
+function cardHtml(r){
+  const a=r.data, files=a.files||[], photos=files.filter(f=>f.kind==='photo'), p=paceText(a);
+  const bits=[a.distance&&kmText(a.distance),a.duration&&hms(a.duration),p&&p[1],a.avgPower&&a.avgPower+' W',a.avgHr&&a.avgHr+' bpm',a.calories&&a.calories+' cal'].filter(Boolean);
+  return `<button type="button" class="card t-${a.type}" data-id="${r.id}">
+    <span class="ic">${icon(a.type)}</span>
+    <span class="cb"><span class="c1"><b>${esc(titleOf(a))}</b><span class="muted">${esc(a.time||'')}</span></span>
+    <span class="c2">${bits.map(b=>`<span>${esc(b)}</span>`).join('')}${a.sets&&a.sets.length?`<span>${esc(setsText(a.sets))}</span>`:''}</span>
+    ${a.notes?`<span class="c3 muted">${esc(a.notes)}</span>`:''}</span>
+    <span class="cx">${photos.slice(0,3).map(f=>f.thumb?`<img src="${f.thumb}" alt="">`:icon('image')).join('')}${files.some(f=>f.kind==='fit')?`<i title="FIT file attached">${icon('clip')}</i>`:''}</span>
+  </button>`;
+}
+function render(){
+  if(!$('#main')||$('#main').hidden) return;
+  $('#filters').innerHTML=[['','All'],...Object.entries(TYPES).map(([k,t])=>[k,t.plural])].map(([k,l])=>`<button type="button" class="chip ${filterType===k?'on':''} ${k?'t-'+k:''}" data-filter="${k}">${k?icon(k):''}${l}</button>`).join('');
+  $$('#period button').forEach(b=>b.classList.toggle('on',b.dataset.period===period));
+  renderStats(); renderWeeks();
+  const list=rows.filter(r=>!filterType||r.data.type===filterType);
+  let h='', day='';
+  for(const r of list.slice(0,shown)){
+    if(r.data.date!==day){day=r.data.date;h+=`<h3 id="d${day}">${fmtDate(day)}</h3>`;}
+    h+=cardHtml(r);
+  }
+  if(list.length>shown) h+=`<button type="button" class="btn" id="more">Show more (${list.length-shown})</button>`;
+  $('#list').innerHTML=h||`<p class="empty">${!loaded&&!rows.length?'Loading…':'Nothing logged yet. Tap an exercise above, or drop a .fit file anywhere on this page.'}</p>`;
+  $('#err').hidden=!loadError; $('#err').textContent=loadError;
+  renderPills();
+}
+
+/* ---------- pictures ---------- */
+async function shrink(file,max,q){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url;});
+    const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)), c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(img.naturalWidth*k)); c.height=Math.max(1,Math.round(img.naturalHeight*k));
+    const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0,c.width,c.height);
+    return c;
+  }finally{URL.revokeObjectURL(url);}
+}
+async function preparePhoto(file){
+  const f={id:uid(),kind:'photo',name:file.name||'pasted picture.jpg',uploaded:false}; let blob=file;
+  try{
+    const big=await shrink(file,2200,.86);
+    blob=await new Promise(r=>big.toBlob(r,'image/jpeg',.86));
+    f.thumb=(await shrink(blob,240,.7)).toDataURL('image/jpeg',.7);
+    f.name=f.name.replace(/\.[^.]+$/,'')+'.jpg';
+  }catch(e){}                                  // a format this browser cannot draw (e.g. HEIC on a PC) is stored as it is
+  f.size=blob.size; return {meta:f,blob};
+}
+
+/* ---------- editor ---------- */
+let ed=null;   // {id,rev,isNew,a,detail (undefined = unchanged),pending:Map(fileId->blob),removed:[]}
+const MAX_PHOTOS=8;
+function openEditor(id,seed){
+  const r=id&&rowById(id);
+  if(r) ed={id:r.id,rev:r.rev,isNew:false,a:JSON.parse(JSON.stringify(r.data)),detail:undefined,pending:new Map(),removed:[],dirty:false};
+  else{const n=new Date();ed={id:uid(),rev:0,isNew:true,a:{type:'ride',date:todayStr(),time:String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'),source:'manual',...seed},detail:undefined,pending:new Map(),removed:[],dirty:false};}
+  drawEditor(); const d=$('#editDlg'); if(!d.open) d.showModal(); d.scrollTop=0;
+}
+const numField=(k,label,v,step='1')=>`<label class="f"><span>${label}</span><input id="f_${k}" type="number" inputmode="decimal" min="0" step="${step}" value="${v??''}"></label>`;
+function drawEditor(){
+  const a=ed.a, d=a.duration||0, files=a.files||[];
+  $('#editDlg').innerHTML=`<form id="editForm" novalidate>
+  <div class="dhead">${ed.isNew?'Add exercise':'Edit exercise'}</div>
+  <div class="dbody">
+    <div class="typerow">${Object.entries(TYPES).map(([k,t])=>`<button type="button" class="chip t-${k} ${a.type===k?'on':''}" data-etype="${k}">${icon(k)}${t.label}</button>`).join('')}</div>
+    <div class="drop" id="drop">Drag a <b>.fit</b> file or pictures here (or paste a picture)<br><button type="button" class="btn" id="pick">Choose files</button></div>
+    <div class="grid2">
+      <label class="f"><span>Date</span><input id="f_date" type="date" value="${a.date}" required></label>
+      <label class="f"><span>Start time</span><input id="f_time" type="time" value="${a.time||''}"></label>
+      <label class="f wide"><span>Title (optional)</span><input id="f_title" value="${esc(a.title||'')}" placeholder="e.g. Tempus Fugit in Watopia"></label>
+      <div class="f wide"><span>Duration</span><div class="dur"><input id="f_h" type="number" min="0" inputmode="numeric" value="${d?Math.floor(d/3600):''}" aria-label="Hours">h<input id="f_m" type="number" min="0" inputmode="numeric" value="${d?Math.floor(d%3600/60):''}" aria-label="Minutes">min<input id="f_s" type="number" min="0" inputmode="numeric" value="${d?d%60:''}" aria-label="Seconds">s</div></div>
+      ${a.type!=='weights'?numField('km','Distance (km)',a.distance?+(a.distance/1000).toFixed(3):'','any'):''}
+      ${numField('calories','Calories',a.calories)}${numField('avgHr','Average heart rate',a.avgHr)}${numField('maxHr','Max heart rate',a.maxHr)}
+      ${a.type!=='weights'?numField('ascent','Climb (m)',a.ascent):''}
+      ${a.type==='ride'||a.type==='row'?numField('avgPower','Average power (W)',a.avgPower):''}
+    </div>
+    ${a.type==='weights'||(a.sets&&a.sets.length)?`<div class="lab">Exercises</div><div id="sets">${(a.sets||[]).map((s,i)=>`<div class="setrow" data-i="${i}"><input data-s="name" value="${esc(s.name)}" placeholder="Exercise" aria-label="Exercise"><input data-s="sets" type="number" min="0" value="${s.sets||''}" placeholder="Sets" aria-label="Sets"><input data-s="reps" type="number" min="0" value="${s.reps||''}" placeholder="Reps" aria-label="Reps"><input data-s="weight" type="number" min="0" step="any" value="${s.weight||''}" placeholder="kg" aria-label="Weight in kg"><button type="button" class="x" data-delset="${i}" aria-label="Remove">×</button></div>`).join('')}</div><button type="button" class="btn" id="addSet">+ Exercise</button>`:''}
+    <label class="f wide"><span>Notes</span><textarea id="f_notes" rows="3">${esc(a.notes||'')}</textarea></label>
+    ${files.length?`<div class="lab">Attached</div><div class="atts">${files.map(f=>`<div class="att">${f.thumb?`<img src="${f.thumb}" alt="">`:icon(f.kind==='photo'?'image':'clip')}<span>${esc(f.name)}</span><button type="button" class="x" data-delfile="${f.id}" aria-label="Remove ${esc(f.name)}">×</button></div>`).join('')}</div>`:''}
+  </div>
+  <div class="dfoot">${ed.isNew?'':'<button type="button" class="btn danger" id="delAct">Delete</button>'}<span class="sp"></span><button type="button" class="btn" id="cancelEd">Cancel</button><button type="submit" class="btn primary" id="saveEd">Save</button></div></form>`;
+}
+function readEditor(){
+  const a=ed.a, v=id=>{const e=$('#f_'+id);return e?e.value.trim():null;};
+  a.date=v('date')||a.date; a.time=v('time'); a.title=v('title'); a.notes=v('notes');
+  const dur=(+v('h')||0)*3600+(+v('m')||0)*60+(+v('s')||0); a.duration=dur||null;
+  if(v('km')!==null) a.distance=v('km')?Math.round(+v('km')*10000)/10:null;
+  for(const k of ['calories','avgHr','maxHr','ascent','avgPower']) if(v(k)!==null) a[k]=v(k)===''?null:+v(k);
+  if($('#sets')) a.sets=$$('#sets .setrow').map(row=>{const g=k=>$(`[data-s="${k}"]`,row).value.trim();return{name:g('name'),sets:+g('sets')||0,reps:+g('reps')||0,weight:+g('weight')||0};});
+}
+const filePath=(a,f,folder)=>`${ONEDRIVE_FOLDER}/${folder}/${a.date} ${f.id} ${f.name.replace(/[\\/:*?"<>|#%]+/g,'-').slice(-80)}`;
+function applyFit(parsed,file){
+  const p=parsed.activity, a=ed.a;
+  for(const [k,val] of Object.entries(p)){ if(k==='type'&&!val) continue; if(val!==null&&val!==undefined) a[k]=val; }
+  ed.detail=parsed.detail;
+  for(const f of (a.files||[]).filter(f=>f.kind==='fit')) removeFile(f.id);
+  const meta={id:uid(),kind:'fit',name:file.name,size:file.blob.size,uploaded:false};
+  (a.files=a.files||[]).push(meta); ed.pending.set(meta.id,file.blob); ed.dirty=true;
+}
+function removeFile(id){
+  const f=(ed.a.files||[]).find(f=>f.id===id); if(!f) return;
+  ed.a.files=ed.a.files.filter(x=>x!==f);
+  if(ed.pending.has(id)) ed.pending.delete(id); else ed.removed.push(f);
+}
+async function addPhotos(files){
+  for(const file of files){
+    if((ed.a.files||[]).filter(f=>f.kind==='photo').length>=MAX_PHOTOS){toast(`Up to ${MAX_PHOTOS} pictures per exercise.`);break;}
+    const {meta,blob}=await preparePhoto(file);
+    (ed.a.files=ed.a.files||[]).push(meta); ed.pending.set(meta.id,blob); ed.dirty=true;
+  }
+}
+const isImage=f=>/^image\//.test(f.type)||/\.(jpe?g|png|gif|webp|heic|heif)$/i.test(f.name);
+async function readFits(files){
+  const out=[], bad=[];
+  for(const f of files){
+    try{
+      const list=/\.zip$/i.test(f.name)?await unzipFits(await f.arrayBuffer()):[{name:f.name,bytes:new Uint8Array(await f.arrayBuffer())}];
+      for(const x of list){
+        try{for(const p of parseFit(x.bytes.buffer.slice(x.bytes.byteOffset,x.bytes.byteOffset+x.bytes.byteLength))) out.push({parsed:p,file:{name:x.name,blob:new Blob([x.bytes],{type:'application/octet-stream'})}});}
+        catch(e){bad.push(`${x.name}: ${e.message}`);}
+      }
+    }catch(e){bad.push(`${f.name}: ${e.message}`);}
+  }
+  return {out,bad};
+}
+const near=(a,b)=>a&&b&&Math.abs(new Date(a)-new Date(b))<2*60*1000;
+const sameImport=(a,p)=>near(a.fitStart,p.fitStart)&&(!p.type||a.type===p.type);
+
+/* files dropped / picked: targetId = drop onto an existing exercise; editor open = add to it */
+async function handleFiles(files,targetId){
+  files=[...files]; if(!files.length) return;
+  if(!user){toast('Sign in first.');return;}
+  if(!loaded){toast('Still connecting to the database. Try again in a moment.');return;}
+  const photos=files.filter(isImage), fits=files.filter(f=>/\.(fit|zip)$/i.test(f.name));
+  const other=files.length-photos.length-fits.length;
+  if(other) toast('Only .fit, Garmin .zip and picture files can be added.');
+  if(!photos.length&&!fits.length) return;
+  const {out,bad}=await readFits(fits);
+  if(bad.length) toast(bad.join('  '));
+  if($('#viewDlg').open){targetId=targetId||$('#viewDlg').dataset.id;$('#viewDlg').close();}
+  const editing=$('#editDlg').open;
+  if(editing){readEditor();}
+  else if(targetId){openEditor(targetId);}
+  if(editing||targetId){
+    if(out.length){
+      if(out.length>1) toast('That file holds more than one exercise: only the first was added here.');
+      const x=out[0], p=x.parsed.activity, a=ed.a;
+      const clash=rows.find(r=>r.id!==ed.id&&sameImport(r.data,p));
+      let go=true;
+      if(clash) go=await ask('Already imported',`This file matches "${titleOf(clash.data)}" on ${fmtDate(clash.data.date)}.`,['Attach here as well','Cancel'])===0;
+      if(go&&(a.files||[]).some(f=>f.kind==='fit')) go=await ask('Replace the FIT file?','This exercise already has a FIT file. Its figures will be replaced with the new file.',['Replace','Cancel'])===0;
+      const blankNew=ed.isNew&&!a.duration&&!a.distance&&!a.fitStart;
+      if(go&&!blankNew&&(p.date!==a.date||(p.type&&p.type!==a.type))) go=await ask('The file differs from this exercise',`The file is a ${p.type?TYPES[p.type].label.toLowerCase():'session'} on ${fmtDate(p.date)}; this exercise is a ${TYPES[a.type].label.toLowerCase()} on ${fmtDate(a.date)}. Use the file's details?`,['Use the file','Cancel'])===0;
+      if(go){applyFit(x.parsed,x.file);if(!p.type)toast('The file does not say which type this is. Check the type at the top.');}
+    }
+    await addPhotos(photos); drawEditor(); return;
+  }
+  if(!out.length){ if(photos.length){openEditor(null);await addPhotos(photos);drawEditor();} return; }
+  const fresh=out.filter((x,i)=>!rows.some(r=>sameImport(r.data,x.parsed.activity))&&!out.slice(0,i).some(y=>sameImport(y.parsed.activity,x.parsed.activity)));
+  if(!fresh.length){toast('Already imported: nothing new to add.');return;}
+  if(fresh.length===1){
+    const x=fresh[0], p=x.parsed.activity;
+    const manual=rows.find(r=>r.data.date===p.date&&r.data.type===p.type&&!(r.data.files||[]).some(f=>f.kind==='fit'));
+    if(manual&&await ask('Add to the exercise already logged?',`"${titleOf(manual.data)}" is logged on ${fmtDate(p.date)} without a FIT file.`,['Add the file to it','Create a new one'])===0) openEditor(manual.id);
+    else openEditor(null,{type:p.type||filterType||'ride'});
+    applyFit(x.parsed,x.file); await addPhotos(photos); drawEditor();
+    if(!p.type) toast('The file does not say which type this is. Check the type at the top.');
+    return;
+  }
+  const typed=fresh.filter(x=>x.parsed.activity.type), skipped=fresh.length-typed.length;
+  if(await ask('Import several files',`${typed.length} new exercises will be added.${out.length-fresh.length?` ${out.length-fresh.length} already imported.`:''}${skipped?` ${skipped} are not a ride, walk, run, row or weights: drop those one at a time.`:''}${photos.length?' Pictures are not added in a batch: drop them onto an exercise.':''}`,['Import','Cancel'])!==0) return;
+  let n=0;
+  for(const x of typed){
+    try{
+      const a={...x.parsed.activity}, meta={id:uid(),kind:'fit',name:x.file.name,size:x.file.blob.size,uploaded:false};
+      meta.path=filePath(a,meta,'FIT Files'); a.files=[meta];
+      await idbPut(meta.id,{blob:x.file.blob}); await insertRow(uid(),a,x.parsed.detail); n++;
+    }catch(e){toast(e.message);break;}
+  }
+  toast(`Imported ${n} of ${typed.length}.`); afterChange();
+}
+async function saveEditor(){
+  readEditor(); const a=ed.a;
+  if(a.sets) a.sets=a.sets.filter(s=>s.name||s.sets||s.reps||s.weight);
+  if(!a.date){toast('Choose a date.');return;}
+  const btn=$('#saveEd'); btn.disabled=true;
+  try{
+    for(const f of a.files||[]) if(ed.pending.has(f.id)){f.path=filePath(a,f,f.kind==='fit'?'FIT Files':'Pictures');await idbPut(f.id,{blob:ed.pending.get(f.id)});}
+    if(ed.isNew) await insertRow(ed.id,a,ed.detail); else await updateRow(ed.id,ed.rev,a,ed.detail);
+    const removed=ed.removed; $('#editDlg').close(); ed=null; toast('Saved.'); afterChange(); deleteFiles(removed);
+  }catch(e){
+    if(e.conflict){$('#editDlg').close();ed=null;await loadRows();syncOneDrive();}
+    else btn.disabled=false;
+    toast(e.message||'Could not save.');
+  }
+}
+async function deleteFiles(files){
+  for(const f of files){
+    await idbDel(f.id).catch(()=>{});
+    if(f.uploaded&&msalAccount) try{await graph(itemUrl(f.path),{method:'DELETE'});}catch(e){console.error(e);}
+  }
+}
+async function deleteActivity(){
+  const id=ed.id, r=rowById(id);
+  if(await ask('Delete this exercise?','It is removed from the database and the calendar. Its files go to the OneDrive recycle bin (if you are signed in to OneDrive).',['Delete','Cancel'])!==0) return;
+  const {data,error}=await sb.from('activities').delete().eq('id',id).eq('rev',ed.rev).select('id');
+  if(error){toast(sbFail(error));return;}
+  $('#editDlg').close(); ed=null;
+  if(!data.length){toast('It was changed on another device. The latest version has been loaded.');await loadRows();return;}
+  rows=rows.filter(x=>x.id!==id); afterChange(); deleteFiles((r&&r.data.files)||[]); toast('Deleted.');
+}
+async function closeEditor(){
+  if(ed&&ed.dirty&&await ask('Discard changes?','The files you added have not been saved.',['Discard','Keep editing'])!==0) return;
+  $('#editDlg').close(); ed=null;
+}
+
+/* ---------- detail view ---------- */
+function routeSvg(route){
+  const k=Math.cos(route[0][0]*Math.PI/180), xs=route.map(p=>p[1]*k), ys=route.map(p=>-p[0]);
+  const x0=Math.min(...xs),y0=Math.min(...ys),w=Math.max(...xs)-x0||1e-5,h=Math.max(...ys)-y0||1e-5,s=Math.min(560/w,260/h);
+  const pts=xs.map((x,i)=>`${((x-x0)*s+(580-w*s)/2).toFixed(1)},${((ys[i]-y0)*s+(280-h*s)/2).toFixed(1)}`);
+  const a=pts[0].split(',');
+  return `<svg class="route" viewBox="0 0 580 280" role="img" aria-label="Route shape"><polyline points="${pts.join(' ')}"/><circle cx="${a[0]}" cy="${a[1]}" r="5"/></svg>`;
+}
+const SERIES=[['hr','Heart rate','bpm',1],['pw','Power','W',1],['sp','Speed','km/h',3.6],['cad','Cadence','rpm',1],['al','Elevation','m',1]];
+function chartsHtml(s){
+  return SERIES.filter(([k])=>s[k]).map(([k,label,unit,mul])=>{
+    const v=s[k].map(x=>x===null?null:x*mul), real=v.filter(x=>x!==null); if(real.length<2) return '';
+    let lo=Math.min(...real),hi=Math.max(...real); if(hi-lo<10){hi+=5;lo-=5;}
+    const T=s.t[s.t.length-1]||1; let d='',pen=false;
+    v.forEach((y,i)=>{if(y===null){pen=false;return;}d+=(pen?'L':'M')+(s.t[i]/T*600).toFixed(1)+' '+(96-(y-lo)/(hi-lo)*90).toFixed(1);pen=true;});
+    return `<figure class="line" data-k="${k}" data-mul="${mul}" data-unit="${unit}"><figcaption><b>${label}</b><span class="muted">${Math.round(lo)}–${Math.round(hi)} ${unit}</span></figcaption>
+      <div class="plot"><svg viewBox="0 0 600 100" preserveAspectRatio="none" role="img" aria-label="${label} over time"><path d="${d}"/></svg><i class="cross" hidden></i></div></figure>`;
+  }).join('');
+}
+let viewDetail=null;
+async function openView(id){
+  const r=rowById(id); if(!r) return;
+  const a=r.data, d=$('#viewDlg'), p=paceText(a), files=a.files||[];
+  d.dataset.id=id; viewDetail=null;
+  const m=[['Duration',hms(a.duration)],['Distance',kmText(a.distance)],p,['Avg heart rate',a.avgHr&&a.avgHr+' bpm'],['Max heart rate',a.maxHr&&a.maxHr+' bpm'],['Avg power',a.avgPower&&a.avgPower+' W'],['Max power',a.maxPower&&a.maxPower+' W'],['Avg cadence',a.avgCadence&&String(a.avgCadence)],['Climb',a.ascent!=null&&a.type!=='weights'?a.ascent+' m':''],['Max speed',a.maxSpeed&&(a.maxSpeed*3.6).toFixed(1)+' km/h'],['Calories',a.calories&&String(a.calories)]].filter(x=>x&&x[1]);
+  d.innerHTML=`<div class="dhead t-${a.type}"><span class="ic">${icon(a.type)}</span><span>${esc(titleOf(a))}<small>${fmtDate(a.date)}${a.time?' at '+a.time:''}${a.source&&a.source!=='manual'?' · from '+({zwift:'Zwift',garmin:'Garmin'}[a.source]||'a FIT file'):''}</small></span></div>
+  <div class="dbody">
+    <div class="metrics">${m.map(([k,v])=>`<div class="stat"><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div>
+    ${a.sets&&a.sets.length?`<table><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>kg</th></tr>${a.sets.map(s=>`<tr><td>${esc(s.name)}</td><td>${s.sets||''}</td><td>${s.reps||''}</td><td>${s.weight||''}</td></tr>`).join('')}</table>`:''}
+    ${a.notes?`<p class="notes">${esc(a.notes)}</p>`:''}
+    ${files.some(f=>f.kind==='photo')?`<div class="photos">${files.filter(f=>f.kind==='photo').map(f=>`<button type="button" data-photo="${f.id}">${f.thumb?`<img src="${f.thumb}" alt="${esc(f.name)}">`:icon('image')+esc(f.name)}</button>`).join('')}</div>`:''}
+    <div id="detail"></div>
+    ${files.filter(f=>f.kind==='fit').map(f=>`<button type="button" class="btn" data-download="${f.id}">${icon('clip')} ${esc(f.name)}${f.uploaded?'':' (waiting to upload)'}</button>`).join('')}
+    <p class="muted">Drop a .fit file or picture here to add it.</p>
+  </div>
+  <div class="dfoot"><span class="sp"></span><button type="button" class="btn" id="closeView">Close</button><button type="button" class="btn primary" id="editView">Edit / add files</button></div>`;
+  if(!d.open) d.showModal(); d.scrollTop=0;
+  const {data,error}=await sb.from('activities').select('detail').eq('id',id).single();
+  if(d.dataset.id!==id||!d.open) return;
+  if(error){$('#detail').innerHTML=`<p class="muted">The route and graphs could not be loaded.</p>`;return;}
+  viewDetail=data&&data.detail;
+  if(viewDetail) $('#detail').innerHTML=(viewDetail.route?routeSvg(viewDetail.route):'')+(viewDetail.series?chartsHtml(viewDetail.series):'');
+}
+async function openFile(id,download){
+  const r=rowById($('#viewDlg').dataset.id), f=r&&r.data.files.find(f=>f.id===id); if(!f) return;
+  try{
+    const blob=await fileBlob(f), url=URL.createObjectURL(blob);
+    if(download){const a=document.createElement('a');a.href=url;a.download=f.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);return;}
+    const d=$('#photoDlg'); d.innerHTML=`<img src="${url}" alt="${esc(f.name)}"><div class="dfoot"><a class="btn" href="${url}" download="${esc(f.name)}">Download</a><button type="button" class="btn primary" data-close>Close</button></div>`;
+    d.onclose=()=>URL.revokeObjectURL(url); d.showModal();
+  }catch(e){
+    if(!download&&f.thumb){const d=$('#photoDlg');d.innerHTML=`<img src="${f.thumb}" alt=""><p class="muted">${esc(e.message)}</p><div class="dfoot"><button type="button" class="btn primary" data-close>Close</button></div>`;d.onclose=null;d.showModal();}
+    else toast(e.message);
+  }
+}
+
+/* ---------- settings, backup ---------- */
+function openSettings(){
+  const d=$('#setDlg'), c=sbConfig();
+  d.innerHTML=`<div class="dhead">Settings</div><div class="dbody">
+    <div class="lab">Database (Supabase)</div><p>${user?`Signed in as <b>${esc(user.email)}</b>.`:'Not signed in.'}${loadError?`<br><span class="bad">${esc(loadError)}</span>`:''}</p>
+    <div class="btnrow"><button type="button" class="btn" id="reload">Reload</button><button type="button" class="btn" id="sbOut">Sign out</button>${SB_URL?'':'<button type="button" class="btn" id="sbForget">Change database connection</button>'}</div>
+    <div class="lab">OneDrive</div><p>${msalAccount?`Signed in as <b>${esc(msalAccount.username)}</b>.`:'Not signed in.'} Folder: <b>${esc(ONEDRIVE_FOLDER)}</b>${odError?`<br><span class="bad">${esc(odError)}</span>`:''}</p>
+    ${GRAPH_CLIENT_ID?'':`<label class="f wide"><span>Azure application (client) ID</span><input id="cid" value="${esc(clientId())}" autocomplete="off" spellcheck="false"></label><p class="muted">Redirect URI to register in Azure: <b>${esc(location.origin+location.pathname)}</b></p><button type="button" class="btn" id="saveCid">Save ID</button>`}
+    <div class="btnrow"><button type="button" class="btn" id="msIn">${msalAccount?'Sync now':'Sign in with Microsoft'}</button>${msalAccount?'<button type="button" class="btn" id="msOut">Sign out of OneDrive</button>':''}</div>
+    <div class="lab">Backup</div><div class="btnrow"><button type="button" class="btn" id="export">Export all data</button><button type="button" class="btn" id="import">Import a backup</button></div>
+    <p class="muted">Version ${VERSION}${c?' · '+esc(c.url):''}</p>
+  </div><div class="dfoot"><span class="sp"></span><button type="button" class="btn primary" data-close>Close</button></div>`;
+  if(!d.open) d.showModal();
+}
+async function exportAll(){
+  const all=[];
+  for(let from=0;;from+=500){const {data,error}=await sb.from('activities').select('id,data,detail').order('id').range(from,from+499);if(error){toast(sbFail(error));return;}all.push(...data);if(data.length<500)break;}
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'exercise-tool',version:1,rows:all})],{type:'application/json'}));
+  a.download=`exercise-export-${todayStr()}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+async function importBackup(file){
+  try{
+    const j=JSON.parse(await file.text()); if(j.app!=='exercise-tool'||!Array.isArray(j.rows)) throw new Error('That is not an Exercise Tool backup.');
+    const fresh=j.rows.filter(r=>r.id&&r.data&&TYPES[r.data.type]&&!rowById(r.id));
+    if(!fresh.length){toast('Nothing new in that backup.');return;}
+    if(await ask('Import backup',`${fresh.length} exercises will be added. Existing ones are left as they are.`,['Import','Cancel'])!==0) return;
+    for(const r of fresh) await insertRow(r.id,r.data,r.detail);
+    toast(`Imported ${fresh.length}.`); afterChange();
+  }catch(e){toast(e.message);}
+}
+
+/* ---------- gate: connect to the database, then sign in ---------- */
+function showGate(mode,msg=''){
+  $('#main').hidden=true; const g=$('#gate'); g.hidden=false;
+  if(mode==='connect') g.innerHTML=`<form id="connectForm"><h2>Connect the database</h2><p class="muted">From your Supabase project: Project URL and the <b>publishable</b> (anon) key. Kept in this browser only.</p>
+    <label class="f"><span>Project URL</span><input id="sbUrl" type="url" placeholder="https://xxxx.supabase.co" required></label>
+    <label class="f"><span>Publishable key</span><input id="sbKey" required autocomplete="off" spellcheck="false"></label><p class="bad">${esc(msg)}</p><button class="btn primary">Connect</button></form>`;
+  else g.innerHTML=`<form id="loginForm"><h2>Sign in</h2><p class="muted">The email and password of the user you created in Supabase.</p>
+    <label class="f"><span>Email</span><input id="email" type="email" autocomplete="username" required></label>
+    <label class="f"><span>Password</span><input id="pw" type="password" autocomplete="current-password" required></label><p class="bad">${esc(msg)}</p><button class="btn primary">Sign in</button>
+    ${SB_URL?'':'<button type="button" class="linkbtn" id="sbForget">Change database connection</button>'}</form>`;
+}
+let wanted=null;   // ?date=YYYY-MM-DD and &new=1 : used by the calendar's links
+async function enterApp(u){
+  user=u; $('#gate').hidden=true; $('#main').hidden=false;
+  const c=lsGet(LS.cache); if(c&&c.user===u.id){rows=c.rows;sortRows();}
+  render();
+  if(await loadRows()){
+    syncOneDrive();
+    if(wanted){
+      const w=wanted; wanted=null; lsSet(LS.resume,null);
+      if(w.add) openEditor(null,{date:w.date});
+      else{const i=rows.findIndex(r=>r.data.date===w.date);if(i>=0){shown=Math.max(shown,i+20);render();const h=$('#d'+w.date);if(h)h.scrollIntoView();const same=rows.filter(r=>r.data.date===w.date);if(same.length===1)openView(same[0].id);}}
+    }
+  }
+}
+async function initDb(){
+  const c=sbConfig();
+  if(!c){showGate('connect');return;}
+  if(!window.supabase){showGate('signin','The database library did not load. Check the connection and reload the page.');return;}
+  try{sb=window.supabase.createClient(c.url,c.key,{auth:{storageKey:LS.auth,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});}
+  catch(e){lsSet(LS.sb,null);showGate('connect',e.message);return;}
+  sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'&&user){user=null;rows=[];loaded=false;lsSet(LS.cache,null);$$('dialog[open]').forEach(d=>d.close());showGate('signin');}});
+  const {data}=await sb.auth.getSession();
+  if(data.session) await enterApp(data.session.user); else showGate('signin');
+}
+
+/* ---------- events ---------- */
+document.addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(e.target.id==='editForm') return saveEditor();
+  if(e.target.id==='connectForm'){
+    const url=$('#sbUrl').value.trim().replace(/\/(rest\/v1)?\/?$/,''), key=$('#sbKey').value.trim();
+    if(badKey(key)) return showGate('connect','That is the SECRET key. Use the publishable (anon) key.');
+    lsSet(LS.sb,{url,key}); return initDb();
+  }
+  if(e.target.id==='loginForm'){
+    const {data,error}=await sb.auth.signInWithPassword({email:$('#email').value.trim(),password:$('#pw').value});
+    if(error) return showGate('signin',sbFail(error));
+    return enterApp(data.user);
+  }
+});
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('button,[data-close]'); if(!t) return;
+  const d=t.dataset;
+  if(t.hasAttribute('data-close')) return t.closest('dialog').close();
+  if(d.add) return openEditor(null,{type:d.add});
+  if(d.filter!==undefined){filterType=d.filter;shown=60;return render();}
+  if(d.period){period=d.period;return render();}
+  if(t.classList.contains('card')) return openView(d.id);
+  if(d.etype){readEditor();ed.a.type=d.etype;return drawEditor();}
+  if(d.delset!==undefined){readEditor();ed.a.sets.splice(+d.delset,1);return drawEditor();}
+  if(d.delfile){readEditor();removeFile(d.delfile);return drawEditor();}
+  if(d.photo) return openFile(d.photo);
+  if(d.download) return openFile(d.download,true);
+  switch(t.id){
+    case 'more':shown+=100;render();break;
+    case 'pick':$('#fileIn').dataset.target='';$('#fileIn').click();break;
+    case 'importBtn':$('#fileIn').dataset.target='';$('#fileIn').click();break;
+    case 'addSet':readEditor();(ed.a.sets=ed.a.sets||[]).push({name:'',sets:3,reps:10,weight:0});drawEditor();$$('#sets [data-s="name"]').pop().focus();break;
+    case 'cancelEd':closeEditor();break;
+    case 'delAct':deleteActivity();break;
+    case 'closeView':$('#viewDlg').close();break;
+    case 'editView':{const id=$('#viewDlg').dataset.id;$('#viewDlg').close();openEditor(id);break;}
+    case 'setBtn':case 'dbPill':openSettings();break;
+    case 'odPill':if(!clientId()||odState==='error') openSettings(); else if(msalAccount&&odState!=='signedout') syncOneDrive(); else msSignIn();break;
+    case 'reload':await loadRows();syncOneDrive();openSettings();break;
+    case 'sbOut':$('#setDlg').close();await sb.auth.signOut({scope:'local'});break;
+    case 'sbForget':lsSet(LS.sb,null);lsSet(LS.auth,null);lsSet(LS.cache,null);location.reload();break;
+    case 'saveCid':lsSet(LS.client,$('#cid').value.trim()||null);location.reload();break;
+    case 'msIn':if(msalAccount){await syncOneDrive();openSettings();}else msSignIn();break;
+    case 'msOut':{const a=msalAccount;msalAccount=null;odState='off';lsSet(LS.hint,null);renderPills();openSettings();msalApp.logoutPopup({account:a}).catch(()=>{});break;}
+    case 'export':exportAll();break;
+    case 'import':$('#backupIn').click();break;
+  }
+});
+document.addEventListener('input',e=>{if(e.target.closest('#editForm'))ed.dirty=true;});
+$('#editDlg').addEventListener('cancel',e=>{e.preventDefault();closeEditor();});
+$('#fileIn').addEventListener('change',e=>{const f=[...e.target.files];e.target.value='';handleFiles(f);});
+$('#backupIn').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)importBackup(f);});
+const hasFiles=e=>e.dataTransfer&&[...e.dataTransfer.types].includes('Files');
+const clearOver=()=>$$('.over').forEach(x=>x.classList.remove('over'));
+document.addEventListener('dragover',e=>{if(!hasFiles(e))return;e.preventDefault();clearOver();const c=e.target.closest&&(e.target.closest('.card')||e.target.closest('dialog')||$('#main'));if(c)c.classList.add('over');});
+document.addEventListener('dragleave',e=>{if(!e.relatedTarget)clearOver();});
+document.addEventListener('drop',e=>{if(!hasFiles(e))return;e.preventDefault();clearOver();
+  if($('#choiceDlg').open||$('#setDlg').open) return;
+  const c=e.target.closest&&e.target.closest('.card');handleFiles(e.dataTransfer.files,c?c.dataset.id:undefined);});
+document.addEventListener('paste',e=>{
+  const f=[...(e.clipboardData?.files||[])].filter(isImage);
+  if(f.length&&($('#editDlg').open||$('#viewDlg').open)){e.preventDefault();handleFiles(f);}
+});
+document.addEventListener('pointermove',e=>{
+  const tip=floater('tip'); let text='';
+  const bar=e.target.closest&&e.target.closest('[data-tip]'), plot=e.target.closest&&e.target.closest('.plot');
+  $$('.cross').forEach(c=>c.hidden=true);
+  if(bar) text=bar.dataset.tip;
+  else if(plot&&viewDetail){
+    const fig=plot.parentElement, s=viewDetail.series, box=plot.getBoundingClientRect(), T=s.t[s.t.length-1]||1, at=(e.clientX-box.left)/box.width*T;
+    let i=0; while(i<s.t.length-1&&Math.abs(s.t[i+1]-at)<=Math.abs(s.t[i]-at)) i++;
+    const v=s[fig.dataset.k][i];
+    const c=$('.cross',plot); c.hidden=false; c.style.left=(s.t[i]/T*100)+'%';
+    text=`${hms(s.t[i])||'0:00'}: ${v===null?'–':Math.round(v*fig.dataset.mul*10)/10} ${fig.dataset.unit}`;
+  }
+  if(!text){tip.hidden=true;return;}
+  const host=e.target.closest('dialog')||document.body; if(tip.parentElement!==host) host.appendChild(tip);
+  tip.textContent=text; tip.hidden=false;
+  tip.style.left=Math.min(e.clientX+12,innerWidth-tip.offsetWidth-8)+'px'; tip.style.top=Math.max(8,e.clientY-36)+'px';
+});
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&user&&!$('#editDlg').open){if(await loadRows())syncOneDrive();}});
+let rz; window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(user)renderWeeks();},150);});
+
+/* ---------- FIT file reader (Garmin / Zwift) ---------- */
+const FIT_EPOCH=631065600;
+const FIT_BASE={0:[1,'getUint8',0xFF],1:[1,'getInt8',0x7F],2:[1,'getUint8',0xFF],3:[2,'getInt16',0x7FFF],4:[2,'getUint16',0xFFFF],5:[4,'getInt32',0x7FFFFFFF],6:[4,'getUint32',0xFFFFFFFF],8:[4,'getFloat32',NaN],9:[8,'getFloat64',NaN],10:[1,'getUint8',0],11:[2,'getUint16',0],12:[4,'getUint32',0],13:[1,'getUint8',0xFF]};
+function fitMessages(buf){
+  const dv=new DataView(buf), u8=new Uint8Array(buf), out={0:[],18:[],20:[],225:[]};
+  let pos=0, files=0;
+  while(pos+12<=u8.length){
+    const hs=u8[pos];
+    if((hs!==12&&hs!==14)||String.fromCharCode(...u8.slice(pos+8,pos+12))!=='.FIT') break;
+    const size=dv.getUint32(pos+4,true); const end=Math.min(pos+hs+size,u8.length);
+    let p=pos+hs, lastTs=0; const defs={}; files++;
+    try{
+      while(p<end){
+        const h=u8[p++]; let local, tsOffset=null;
+        if(h&0x80){local=(h>>5)&3; tsOffset=h&31;}
+        else if(h&0x40){
+          local=h&15; p++; const le=u8[p++]===0; const global=dv.getUint16(p,le); p+=2; const n=u8[p++];
+          const fields=[]; for(let i=0;i<n;i++){fields.push({num:u8[p],size:u8[p+1],base:u8[p+2]&0x1F});p+=3;}
+          let dev=0; if(h&0x20){const m=u8[p++]; for(let i=0;i<m;i++){dev+=u8[p+1];p+=3;}}
+          defs[local]={global,le,fields,dev}; continue;
+        } else local=h&15;
+        const d=defs[local]; if(!d) throw new Error('bad record');
+        const keep=out[d.global], m={};
+        for(const f of d.fields){
+          const b=FIT_BASE[f.base];
+          if(b&&p+f.size<=end&&f.size>=b[0]&&(keep||f.num===253)){
+            const v=dv[b[1]](p,d.le);
+            if(!(Number.isNaN(v)||v===b[2])) m[f.num]=v;
+          }
+          p+=f.size;
+        }
+        p+=d.dev;
+        if(m[253]!==undefined) lastTs=m[253];
+        else if(tsOffset!==null&&lastTs){lastTs+=(tsOffset-(lastTs&31)+32)%32; m[253]=lastTs;}
+        if(keep&&p<=end) keep.push(m);
+      }
+    }catch(e){ if(!out[20].length&&!out[18].length) throw new Error('That FIT file is damaged and could not be read.'); }
+    pos=pos+hs+size+2;
+  }
+  if(!files) throw new Error('That is not a FIT file.');
+  return out;
+}
+function fitSportToType(sport,sub){
+  if(sport===2||sport===21) return 'ride';
+  if(sport===1) return 'run';
+  if(sport===11||sport===17) return 'walk';
+  if(sport===15) return 'row';
+  if(sport===4){ if(sub===14) return 'row'; if(sub===6||sub===5) return 'ride'; if(sub===1||sub===45) return 'run'; if(sub===20) return 'weights'; }
+  if(sport===10){ if(sub===14) return 'row'; return 'weights'; }
+  return '';
+}
+const FIT_EXERCISES=['Bench press','Calf raise','Cardio','Carry','Chop','Core','Crunch','Curl','Deadlift','Flye','Hip raise','Hip stability','Hip swing','Hyperextension','Lateral raise','Leg curl','Leg raise','Lunge','Olympic lift','Plank','Plyo','Pull up','Push up','Row','Shoulder press','Shoulder stability','Shrug','Sit up','Squat','Total body','Triceps extension','Warm up','Run'];
+function bucketSeries(recs,startTs,max=300){
+  const n=Math.min(max,recs.length), keys={hr:3,pw:7,sp:73,al:78,cad:4};
+  const s={t:[],hr:[],pw:[],sp:[],al:[],cad:[]};
+  for(let i=0;i<n;i++){
+    const part=recs.slice(Math.floor(i*recs.length/n),Math.floor((i+1)*recs.length/n)); if(!part.length) continue;
+    s.t.push(Math.round((part[0][253]||startTs)-startTs));
+    for(const [k,f] of Object.entries(keys)){
+      const vals=part.map(r=>{
+        if(k==='sp') return r[73]!==undefined?r[73]/1000:r[6]!==undefined?r[6]/1000:undefined;
+        if(k==='al'){const a=r[78]!==undefined?r[78]:r[2];return a!==undefined?a/5-500:undefined;}
+        return r[f];
+      }).filter(v=>v!==undefined);
+      s[k].push(vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*10)/10:null);
+    }
+  }
+  for(const k of Object.keys(keys)) if(s[k].every(v=>v===null||v===0)&&k!=='al') delete s[k]; else if(s[k].every(v=>v===null)) delete s[k];
+  return s;
+}
+function parseFit(buf){
+  const m=fitMessages(buf);
+  const records=m[20].filter(r=>r[253]!==undefined);
+  const fileId=m[0][0]||{};
+  const maker={1:'garmin',260:'zwift'}[fileId[1]]||'fit';
+  let sessions=m[18];
+  if(!sessions.length){
+    if(!records.length) throw new Error('No exercise was found in that FIT file.');
+    const a=records[0], b=records[records.length-1];
+    sessions=[{2:a[253],253:b[253],7:(b[253]-a[253])*1000,9:b[5]}];
+  }
+  return sessions.map(s=>{
+    const start=s[2]??(records[0]&&records[0][253])??fileId[4];
+    if(start===undefined) throw new Error('The FIT file has no start time.');
+    const endTs=s[7]!==undefined?start+s[7]/1000:s[253]??Infinity;
+    const recs=sessions.length>1?records.filter(r=>r[253]>=start&&r[253]<=endTs+1):records;
+    const d=new Date((start+FIT_EPOCH)*1000);
+    const num=(v,scale=1)=>v===undefined?null:Math.round(v/scale*10)/10;
+    const nz=v=>v?v:null;
+    const maxSp=s[125]!==undefined?s[125]:s[15];
+    const a={
+      type:fitSportToType(s[5],s[6]), virtual:maker==='zwift'||s[6]===58, source:maker,
+      fitStart:d.toISOString(),
+      date:ymd(d), time:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),
+      duration:Math.round((s[8]??s[7]??0)/1000)||null,
+      distance:nz(num(s[9],100)), calories:nz(s[11]??null),
+      avgHr:nz(s[16]??null), maxHr:nz(s[17]??null), avgPower:nz(s[20]??null), maxPower:nz(s[21]??null),
+      avgCadence:nz(s[18]??null), maxCadence:nz(s[19]??null),
+      ascent:s[22]??null, maxSpeed:maxSp?Math.round(maxSp)/1000:null,
+    };
+    const sets=[];
+    for(const x of m[225]){
+      if(x[5]!==1) continue;
+      if(sessions.length>1&&x[253]!==undefined&&(x[253]<start||x[253]>endTs+60)) continue;
+      const name=FIT_EXERCISES[x[7]]||'Exercise', reps=x[3]||0, weight=x[4]?Math.round(x[4]/16*10)/10:0;
+      const last=sets[sets.length-1];
+      if(last&&last.name===name&&last.reps===reps&&last.weight===weight) last.sets++;
+      else sets.push({name,sets:1,reps,weight});
+    }
+    if(sets.length) a.sets=sets;
+    const pts=recs.filter(r=>r[0]!==undefined&&r[1]!==undefined&&(r[0]||r[1]));
+    const step=Math.max(1,Math.ceil(pts.length/500));
+    const route=pts.filter((_,i)=>i%step===0||i===pts.length-1).map(r=>[+(r[0]*180/2147483648).toFixed(5),+(r[1]*180/2147483648).toFixed(5)]);
+    const detail={series:recs.length>1?bucketSeries(recs,start):null,route:route.length>1?route:null};
+    return {activity:a,detail:(detail.series||detail.route)?detail:null};
+  });
+}
+/* Garmin Connect "Export Original" downloads a .zip containing the .fit */
+async function unzipFits(buf){
+  const dv=new DataView(buf), u8=new Uint8Array(buf);
+  let e=-1; for(let i=u8.length-22;i>=Math.max(0,u8.length-65558);i--) if(dv.getUint32(i,true)===0x06054b50){e=i;break;}
+  if(e<0) throw new Error('That zip file could not be read.');
+  const count=dv.getUint16(e+10,true); let p=dv.getUint32(e+16,true); const out=[];
+  for(let i=0;i<count;i++){
+    const method=dv.getUint16(p+10,true), csize=dv.getUint32(p+20,true), nl=dv.getUint16(p+28,true), xl=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true), lo=dv.getUint32(p+42,true);
+    const name=new TextDecoder().decode(u8.slice(p+46,p+46+nl)); p+=46+nl+xl+cl;
+    if(!/\.fit$/i.test(name)) continue;
+    const ds=lo+30+dv.getUint16(lo+26,true)+dv.getUint16(lo+28,true), raw=u8.slice(ds,ds+csize);
+    let bytes;
+    if(method===0) bytes=raw;
+    else if(method===8) bytes=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+    else throw new Error('That zip uses a compression this page cannot open. Unzip it first.');
+    out.push({name:name.split('/').pop(),bytes});
+  }
+  if(!out.length) throw new Error('No .fit file was found inside that zip.');
+  return out;
+}
+
+(async function init(){
+  const q=new URLSearchParams(location.search), date=q.get('date');
+  if(/^\d{4}-\d\d-\d\d$/.test(date||'')) wanted={date,add:q.get('new')==='1'};
+  if(wanted){lsSet(LS.resume,{...wanted,at:Date.now()});history.replaceState(null,'',location.pathname+location.hash);}   // the hash may hold Microsoft's sign-in reply
+  else{const r=lsGet(LS.resume);if(r&&Date.now()-r.at<2*60*1000)wanted=r;}                                              // survives a sign-in redirect
+  $('#addRow').innerHTML=Object.entries(TYPES).map(([k,t])=>`<button type="button" class="addbtn t-${k}" data-add="${k}">${icon(k)}<span>${t.label}</span></button>`).join('');
+  $('#calLink').href=CALENDAR_URL;
+  initOneDrive();                // not awaited: a slow Microsoft sign-in must not hold up the exercise list
+  await initDb();
+})();
+
+</script>
+</body>
+</html>
