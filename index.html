@@ -79,8 +79,13 @@ table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:5px 6px;
 .line{margin:0 0 10px}.line figcaption{display:flex;justify-content:space-between;font-size:12.5px}.plot{position:relative;border-bottom:1px solid var(--line);touch-action:pan-y}.plot svg{display:block;width:100%;height:100px}
 .plot path{fill:none;stroke:var(--data);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}.cross{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);pointer-events:none}
 figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:4px}
-.zrow{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr) 4.5em;gap:8px;align-items:center;padding:2px 0}.zrow b{font-size:12.5px}.zrow small{display:block;font-size:11px;color:var(--muted)}
-.zbar{height:16px;border-left:1px solid var(--line)}.zbar i{display:block;height:100%;background:var(--data);border-radius:0 4px 4px 0}.zt{text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px}
+.zrow{display:grid;grid-template-columns:14px minmax(0,1fr) 4.5em;gap:8px;align-items:center;padding:2px 0}.zrow b{font-size:12.5px}.zrow small{display:block;font-size:11px;color:var(--muted)}
+.zt{text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px}.sw{width:14px;height:14px;border-radius:4px}
+.hrdist{position:relative;height:210px;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:3px}.hrdist i{position:absolute;bottom:0;font-style:normal}
+.band{height:72%}.band b{display:block;text-align:center;margin-top:8px;font-size:12px;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.55)}
+.hbar{background:#eef0f2;border:1px solid #b9c0c7;border-bottom:0;border-radius:3px 3px 0 0;min-height:3px}.hbar:hover{background:#fff;border-color:#15212b}
+.z1{background:#4a86f0}.z2{background:#73bd60}.z3{background:#f6cd4a}.z4{background:#ea7040}.z5{background:#e84326}
+.hrsum{margin:4px 0 8px;font-size:13px;color:var(--muted)}.hrsum b{color:var(--ink);font-size:15px;margin-right:10px}.heart{color:#e03a2a;font-size:16px}
 .maxhr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.maxhr input{width:80px;margin:0 4px}.warnnote{color:var(--warn);margin:6px 0 0}
 .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
 .ai{display:flex;flex-direction:column;gap:8px}.aitext{border:1px solid var(--line);border-radius:10px;padding:4px 14px 10px;background:var(--bg)}.aitext h4{margin:10px 0 4px;font-size:14px}.aitext ul,.aitext ol{margin:4px 0;padding-left:20px}.aitext p{margin:6px 0}
@@ -169,7 +174,7 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-27 · exercise tool v1.9 · chocolate bars burnt';
+const VERSION='2026-11-28 · exercise tool v1.10 · heart rate distribution';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
 const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
@@ -1151,7 +1156,7 @@ function lineChart(s,a,[k,label,unit,mul,avgKey,maxKey]){
     <div class="plot"><svg viewBox="0 0 600 100" preserveAspectRatio="none" role="img" aria-label="${label} over time"><path d="${d}"/></svg><i class="cross" hidden></i></div>
     <div class="axis"><span>0:00</span><span>line from ${Math.round(lo)} to ${Math.round(hi)} ${unit}</span><span>${hms(T)}</span></div></figure>`;
 }
-const ZONES=[['Below zone 1','Very easy',0],['Zone 1','Warm up / recovery',50],['Zone 2','Easy endurance',60],['Zone 3','Aerobic / tempo',70],['Zone 4','Threshold',80],['Zone 5','Maximum',90]];
+const ZONES=[['Zone 1','Warm up / recovery',0],['Zone 2','Easy endurance',60],['Zone 3','Aerobic / tempo',70],['Zone 4','Threshold',80],['Zone 5','Maximum',90]];
 /* profile and max heart rate are kept with the Supabase user so every device gets the same figures */
 const getProfile=()=>(user&&user.user_metadata&&user.user_metadata.profile)||lsGet(LS.profile)||{};
 const enteredMax=()=>+((user&&user.user_metadata&&user.user_metadata.maxHr)||lsGet(LS.maxHr)||0);
@@ -1178,14 +1183,36 @@ function zoneTimes(detail,max){
   if(!any) return null;
   const total=secs.reduce((x,y)=>x+y,0)||1;
   return {exact,total,zones:ZONES.map(([name,what,from],i)=>({name,what,secs:secs[i],share:secs[i]/total,
-    range:i===0?`under ${Math.ceil(max*.5)}`:i===ZONES.length-1?`${Math.ceil(max*from/100)}+`:`${Math.ceil(max*from/100)}–${Math.ceil(max*ZONES[i+1][2]/100)-1}`}))};
+    range:i===0?`under ${Math.ceil(max*ZONES[1][2]/100)}`:i===ZONES.length-1?`${Math.ceil(max*from/100)}+`:`${Math.ceil(max*from/100)}–${Math.ceil(max*ZONES[i+1][2]/100)-1}`}))};
 }
 const maxHrField=v=>`<div class="maxhr"><label>Your max heart rate <input type="number" inputmode="numeric" min="100" max="230" value="${v||''}" aria-label="Maximum heart rate"> bpm</label><button type="button" class="btn" data-savemax>Apply</button></div>`;
+/* time at each heart rate, as bars over the zone colour bands */
+function hrBins(detail){
+  const out={};
+  if(detail.hrSecs) for(const [bpm,t] of Object.entries(detail.hrSecs)) out[+bpm]=(out[+bpm]||0)+t;
+  else if(detail.series&&detail.series.hr){const s=detail.series;s.hr.forEach((h,i)=>{if(!h)return;const k=Math.round(h);out[k]=(out[k]||0)+(i+1<s.t.length?s.t[i+1]-s.t[i]:(i?s.t[i]-s.t[i-1]:1));});}
+  return out;
+}
+function hrDistHtml(detail,a,max){
+  const secs=hrBins(detail), beats=Object.keys(secs).map(Number).filter(b=>b>0&&secs[b]>0);
+  if(!beats.length) return '';
+  const low=Math.min(...beats), high=Math.max(...beats);
+  const lo=Math.max(0,Math.min(60,Math.floor(low/10)*10)), hi=Math.max(max,high+3), w=hi-lo>130?3:2;
+  const bins=new Map(); for(const b of beats){const k=lo+Math.floor((b-lo)/w)*w;bins.set(k,(bins.get(k)||0)+secs[b]);}
+  const top=Math.max(...bins.values()), x=b=>(Math.min(hi,Math.max(lo,b))-lo)/(hi-lo)*100;
+  const edges=[lo,...ZONES.slice(1).map(z=>max*z[2]/100),hi];
+  const bands=ZONES.map((z,i)=>{const l=x(edges[i]),r=x(edges[i+1]);return r>l?`<i class="band z${i+1}" style="left:${l.toFixed(2)}%;width:${(r-l).toFixed(2)}%"><b>Z${i+1}</b></i>`:'';}).join('');
+  const bars=[...bins].sort((p,q)=>p[0]-q[0]).map(([k,t])=>`<i class="hbar" data-tip="${k}–${k+w-1} bpm: ${hms(Math.round(t))||'0:00'}" style="left:${x(k).toFixed(2)}%;width:${(x(k+w)-x(k)).toFixed(2)}%;height:${(t/top*88).toFixed(1)}%"></i>`).join('');
+  const total=beats.reduce((n,b)=>n+secs[b],0), peak=a.maxHr||high, mean=a.avgHr||Math.round(beats.reduce((n,b)=>n+b*secs[b],0)/total);
+  return `<div class="hrdist" role="img" aria-label="Time at each heart rate from ${low} to ${high} beats per minute, over zone colour bands">${bands}${bars}</div>
+    <div class="axis">${[0,1,2,3].map(i=>`<span>${Math.round(lo+(hi-lo)*i/3)} bpm</span>`).join('')}</div>
+    <p class="hrsum"><span class="heart" aria-hidden="true">♥</span> Max <b>${peak}</b> Avg <b>${mean}</b></p>`;
+}
 function zonesHtml(detail,a){
   const m=maxHrInfo(a), z=zoneTimes(detail,m.max); if(!z) return '';
-  const top=Math.max(...z.zones.map(x=>x.share));
-  return `<figure class="zones"><figcaption><b>Time in heart rate zones</b><span class="muted">max ${m.max} bpm (${m.note})</span></figcaption>
-    ${z.zones.map((x,i)=>({x,i})).filter(({x,i})=>i>0||x.secs).map(({x})=>`<div class="zrow" data-tip="${x.name}: ${x.range} bpm, ${hms(x.secs)||'0:00'}"><span class="zn"><b>${x.name}</b><small>${x.what} · ${x.range}</small></span><span class="zbar"><i style="width:${(top?x.share/top*100:0).toFixed(1)}%"></i></span><span class="zt">${hms(x.secs)||'0:00'}<small>${Math.round(x.share*100)}%</small></span></div>`).join('')}
+  return `<figure class="zones"><figcaption><b>Heart rate distribution</b><span class="muted">zones from max ${m.max} bpm (${m.note})</span></figcaption>
+    ${hrDistHtml(detail,a,m.max)}
+    ${z.zones.map((x,i)=>`<div class="zrow"><i class="sw z${i+1}"></i><span class="zn"><b>${x.name}</b><small>${x.what} · ${x.range} bpm</small></span><span class="zt">${hms(x.secs)||'0:00'}<small>${Math.round(x.share*100)}%</small></span></div>`).join('')}
     ${m.assumed?`<p class="warnnote">These zones assume a maximum of ${m.max} bpm. Add your date of birth in Settings, or enter your maximum below.</p>`:''}
     ${m.source==='age'?`<p class="muted">An age estimate can be 10 bpm or more out. Enter a measured maximum below to override it.</p>`:''}
     ${m.source!=='assumed'&&a.maxHr>m.max?`<p class="warnnote">This session reached ${a.maxHr} bpm, above the ${m.max} bpm used. Consider entering a higher maximum.</p>`:''}
