@@ -18,7 +18,7 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
 button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-svg{width:20px;height:20px;flex:none}
+svg:where(:not(.leaflet-zoom-animated)){width:20px;height:20px;flex:none}
 .wrap{max-width:980px;margin:0 auto;padding:14px 14px 60px}
 header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
 h1{font-size:22px;margin:0 auto 0 0}h2{margin:0 0 6px;font-size:19px}
@@ -70,6 +70,10 @@ input,textarea,select{border:1px solid var(--line);border-radius:8px;padding:7px
 table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line)}th{font-size:12px;color:var(--muted)}
 .notes{white-space:pre-wrap}
 .route{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}.route polyline{fill:none;stroke:var(--data);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}.route circle{fill:var(--ink);stroke:var(--surface);stroke-width:2}
+.mapfig{margin:0 0 12px}.mapbox{height:320px;border:1px solid var(--line);border-radius:10px;overflow:hidden;isolation:isolate;flex:none}.mapbox>.route{border:0;height:100%;margin:0}
+.mapfig figcaption{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:12.5px;margin-top:6px}.mapfig .mapmsg{flex:1;color:var(--muted)}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 2px}.dot.go{background:#12a150}.dot.end{background:#d92d20}
+#mapDlg{width:calc(100vw - 16px);max-width:none}.mapbox.big{height:calc(100dvh - 90px);border:0;border-radius:0}
+.mapbox .leaflet-control-layers label{display:flex;align-items:center;gap:6px;margin:0}.mapbox .leaflet-control-layers input{width:auto;margin:0}.mapbox .leaflet-control-layers label>span{display:flex;align-items:center;gap:6px}.mapbox .leaflet-control-layers,.mapbox .leaflet-control-attribution{color:#222}.mapbox .leaflet-control-attribution{font-size:10px}
 .line{margin:0 0 10px}.line figcaption{display:flex;justify-content:space-between;font-size:12.5px}.plot{position:relative;border-bottom:1px solid var(--line);touch-action:pan-y}.plot svg{display:block;width:100%;height:100px}
 .plot path{fill:none;stroke:var(--data);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}.cross{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);pointer-events:none}
 figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:4px}
@@ -144,6 +148,7 @@ body.reporting{overflow:hidden}
 <dialog id="healthViewDlg"></dialog>
 <dialog id="healthDlg"></dialog>
 <dialog id="photoDlg"></dialog>
+<dialog id="mapDlg"></dialog>
 <dialog id="choiceDlg"></dialog>
 <input type="file" id="fileIn" multiple hidden accept=".fit,.zip,.pdf,image/*,application/octet-stream">
 <input type="file" id="pdfIn" multiple hidden accept=".pdf,application/pdf">
@@ -162,7 +167,7 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-27 · exercise tool v1.7.1 · own Supabase project';
+const VERSION='2026-11-27 · exercise tool v1.8 · satellite map';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
 const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
@@ -512,7 +517,7 @@ function drawEditor(){
   <div class="dbody">
     <div class="typerow">${Object.entries(TYPES).map(([k,t])=>`<button type="button" class="chip t-${k} ${a.type===k?'on':''}" data-etype="${k}">${icon(k)}${t.label}</button>`).join('')}</div>
     <div class="drop" id="drop">Drag a <b>.fit</b> file or pictures here (or paste a picture)<br><button type="button" class="btn" id="pick">Choose files</button></div>
-    ${ed.detail&&ed.detail.series?`<div class="preview"><div class="lab">Graphs from the file</div>${graphsHtml(ed.detail,a)}</div>`:''}
+    ${ed.detail&&(ed.detail.series||isOutdoor(ed.detail.route,a))?`<div class="preview">${isOutdoor(ed.detail.route,a)?`<div class="lab">GPS path from the file</div>${routeBlock(ed.detail.route,a)}`:''}<div class="lab">Graphs from the file</div>${graphsHtml(ed.detail,a)}</div>`:''}
     <div class="grid2">
       <label class="f"><span>Date</span><input id="f_date" type="date" value="${a.date}" required></label>
       <label class="f"><span>Start time</span><input id="f_time" type="time" value="${a.time||''}"></label>
@@ -528,6 +533,7 @@ function drawEditor(){
     ${files.length?`<div class="lab">Attached</div><div class="atts">${files.map(f=>`<div class="att">${f.thumb?`<img src="${f.thumb}" alt="">`:icon(f.kind==='photo'?'image':'clip')}<span>${esc(f.name)}</span><button type="button" class="x" data-delfile="${f.id}" aria-label="Remove ${esc(f.name)}">×</button></div>`).join('')}</div>`:''}
   </div>
   <div class="dfoot">${ed.isNew?'':'<button type="button" class="btn danger" id="delAct">Delete</button>'}<span class="sp"></span><button type="button" class="btn" id="cancelEd">Cancel</button>${ed.detail?'<button type="submit" class="btn" id="saveAsk">Save and ask AI</button>':''}<button type="submit" class="btn primary" id="saveEd">Save</button></div></form>`;
+  mountMaps();
 }
 function readEditor(){
   const a=ed.a, v=id=>{const e=$('#f_'+id);return e?e.value.trim():null;};
@@ -700,7 +706,7 @@ async function openView(id){
   if(d.dataset.id!==id||!d.open) return;
   if(error){$('#detail').innerHTML=`<p class="muted">The route and graphs could not be loaded.</p>`;return;}
   viewDetail=data&&data.detail; viewLoaded=id;
-  if(viewDetail) $('#detail').innerHTML=(viewDetail.route?routeSvg(viewDetail.route):'')+graphsHtml(viewDetail,r.data);
+  if(viewDetail){$('#detail').innerHTML=routeBlock(viewDetail.route,r.data)+graphsHtml(viewDetail,r.data);mountMaps();}
 }
 async function openFile(id,download){
   const r=rowById($('#viewDlg').dataset.id), f=r&&r.data.files.find(f=>f.id===id); if(!f) return;
@@ -1012,7 +1018,7 @@ function parseFit(buf){
     }
     if(sets.length) a.sets=sets;
     const pts=recs.filter(r=>r[0]!==undefined&&r[1]!==undefined&&(r[0]||r[1]));
-    const step=Math.max(1,Math.ceil(pts.length/500));
+    const step=Math.max(1,Math.ceil(pts.length/(a.virtual?500:2000)));   // finer for real routes shown on a map
     const route=pts.filter((_,i)=>i%step===0||i===pts.length-1).map(r=>[+(r[0]*180/2147483648).toFixed(5),+(r[1]*180/2147483648).toFixed(5)]);
     /* seconds spent at each heart rate, for the zone graph (gaps over 30 s are pauses) */
     const hrSecs={};
@@ -1042,6 +1048,75 @@ async function unzipFits(buf){
   if(!out.length) throw new Error('No .fit file was found inside that zip.');
   return out;
 }
+
+/* ---------- satellite map of a real (GPS) route ---------- */
+const LEAFLET='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/';
+const ESRI='https://server.arcgisonline.com/ArcGIS/rest/services/';
+let leafletWait=null, mapSeq=0, liveMaps=[];
+const mapRoutes=new Map();
+const isOutdoor=(route,a)=>!!(route&&route.length>1&&!a.virtual&&a.type!=='weights');
+function routeBlock(route,a){
+  if(!route) return '';
+  if(!isOutdoor(route,a)) return routeSvg(route);
+  const key='m'+(++mapSeq); mapRoutes.set(key,route);
+  return `<figure class="mapfig"><div class="mapbox" data-map="${key}">${routeSvg(route)}</div>
+    <figcaption><span><i class="dot go"></i>Start <i class="dot end"></i>Finish</span><span class="mapmsg" role="status">Loading satellite map…</span><button type="button" class="btn" data-bigmap="${key}" hidden>Larger map</button></figcaption></figure>`;
+}
+function loadLeaflet(){
+  if(window.L&&window.L.map) return Promise.resolve(window.L);
+  return leafletWait||(leafletWait=new Promise((ok,fail)=>{
+    const css=document.createElement('link'), js=document.createElement('script');
+    const stop=()=>{css.remove();js.remove();leafletWait=null;fail(new Error('map library'));};
+    css.rel='stylesheet';css.href=LEAFLET+'leaflet.css';css.integrity='sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H';css.crossOrigin='';
+    js.src=LEAFLET+'leaflet.js';js.integrity='sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH';js.crossOrigin='';
+    css.onerror=js.onerror=stop;
+    css.onload=()=>{js.onload=()=>ok(window.L);document.head.appendChild(js);};
+    document.head.appendChild(css);
+  }));
+}
+function drawMap(L,box,route,big){
+  box.textContent='';
+  const map=L.map(box,{scrollWheelZoom:big,dragging:big||!L.Browser.mobile,zoomSnap:.5});
+  map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
+  const opts={maxZoom:20,maxNativeZoom:18};
+  const sat=L.tileLayer(ESRI+'World_Imagery/MapServer/tile/{z}/{y}/{x}',{...opts,attribution:'Powered by <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> · Imagery: Esri, Maxar, Earthstar Geographics, GIS User Community'}).addTo(map);
+  const names=L.layerGroup(['Reference/World_Transportation','Reference/World_Boundaries_and_Places'].map(s=>L.tileLayer(ESRI+s+'/MapServer/tile/{z}/{y}/{x}',opts)));
+  L.control.layers(null,{'Roads and names':names},{collapsed:false}).addTo(map);
+  const line=(color,weight)=>L.polyline(route,{color,weight,opacity:1,interactive:false}).addTo(map);
+  line('#fff',6); const path=line('#ff5a00',3);
+  const dot=(at,fill)=>L.circleMarker(at,{radius:6,color:'#fff',weight:2,fillColor:fill,fillOpacity:1,interactive:false}).addTo(map);
+  dot(route[route.length-1],'#d92d20'); dot(route[0],'#12a150');
+  map.fitBounds(path.getBounds(),{padding:[24,24],maxZoom:18});
+  liveMaps.push(map);
+  return {map,sat};
+}
+function dropOldMaps(){      // maps that were redrawn over, or are in a dialog that has been closed
+  liveMaps=liveMaps.filter(m=>{const c=m.getContainer();if(c.isConnected&&!c.closest('dialog:not([open])'))return true;m.remove();return false;});
+}
+document.addEventListener('close',()=>dropOldMaps(),true);
+function mountMaps(){
+  dropOldMaps();
+  document.querySelectorAll('.mapbox[data-map]:not([data-on])').forEach(box=>{
+    const route=mapRoutes.get(box.dataset.map); if(!route) return;
+    box.dataset.on='1';
+    const fig=box.parentElement, msg=$('.mapmsg',fig);
+    loadLeaflet().then(L=>{
+      if(!box.isConnected) return;
+      const {sat}=drawMap(L,box,route,false); let seen=false;
+      msg.textContent=''; $('[data-bigmap]',fig).hidden=false;
+      sat.on('tileload',()=>{seen=true;msg.textContent='';});
+      sat.on('tileerror',()=>{if(!seen)msg.textContent='Satellite pictures could not be loaded. Check the connection.';});
+    }).catch(()=>{msg.textContent='The map could not be loaded, so only the route shape is shown.';});
+  });
+}
+function openBigMap(key){
+  const route=mapRoutes.get(key); if(!route||!window.L) return;
+  const d=$('#mapDlg');
+  d.innerHTML='<div class="mapbox big"></div><div class="dfoot"><button type="button" class="btn primary" data-close>Close</button></div>';
+  d.onclose=()=>{d.innerHTML='';dropOldMaps();};
+  d.showModal(); drawMap(window.L,$('.mapbox',d),route,true);
+}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-bigmap]');if(t)openBigMap(t.dataset.bigmap);});
 /* ---------- graphs and heart rate zones ---------- */
 const SERIES=[['pw','Power','W',1,'avgPower','maxPower'],['cad','Cadence','rpm',1,'avgCadence','maxCadence'],['hr','Heart rate','bpm',1,'avgHr','maxHr'],['sp','Speed','km/h',3.6,null,'maxSpeed'],['al','Elevation','m',1]];
 function lineChart(s,a,[k,label,unit,mul,avgKey,maxKey]){
@@ -1116,7 +1191,7 @@ async function saveMaxHr(btn){
 }
 function redrawGraphs(){
   if($('#editDlg').open&&ed&&ed.detail){readEditor();const y=$('#editDlg').scrollTop;drawEditor();$('#editDlg').scrollTop=y;}
-  if($('#viewDlg').open&&viewDetail){const r=rowById($('#viewDlg').dataset.id);if(r)$('#detail').innerHTML=(viewDetail.route?routeSvg(viewDetail.route):'')+graphsHtml(viewDetail,r.data);}
+  if($('#viewDlg').open&&viewDetail){const r=rowById($('#viewDlg').dataset.id);if(r){$('#detail').innerHTML=routeBlock(viewDetail.route,r.data)+graphsHtml(viewDetail,r.data);mountMaps();}}
 }
 
 /* ---------- profile ---------- */
