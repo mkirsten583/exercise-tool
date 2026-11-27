@@ -85,6 +85,9 @@ figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:spac
 .trend polyline{fill:none;stroke-width:2}.trend polyline.s0{stroke:var(--data)}.trend polyline.s1{stroke:var(--s1)}.trend circle{stroke:var(--surface);stroke-width:2}.trend circle.s0{fill:var(--data)}.trend circle.s1{fill:var(--s1)}.trend circle.hit{fill:transparent;stroke:none}
 .legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;margin:2px 0}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;background:var(--data)}.legend i.s1{background:var(--s1)}
 .dbody h3{margin:6px 0 0;font-size:15px}.scans{display:flex;gap:12px;justify-content:center;margin:10px 0}.scans figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;flex:0 1 220px}.scans button{border:0;background:none;padding:0;max-width:100%}.scans img{display:block;max-width:100%;max-height:440px;margin:auto;border-radius:8px}.scans figcaption{font-size:12px;color:var(--muted);text-align:center}
+#garmin h2{margin:0}#garmin p{margin:6px 0}.stat small{display:block;font-size:11px}
+.gsetup ol{margin:6px 0;padding-left:20px}.gsetup li{margin-bottom:6px}.gsetup .linkbtn{padding:2px 4px}
+.trend rect.s0{fill:var(--data)}.trend rect.s1{fill:var(--s1)}.trend rect.hit{fill:transparent}
 .hfoot .linkbtn{padding:2px 4px}.dbody details{margin:6px 0}.dbody summary{cursor:pointer;font-weight:600;padding:4px 0}.scrollx{overflow-x:auto}
 #tip{position:fixed;z-index:9;pointer-events:none;background:var(--ink);color:var(--surface);padding:5px 9px;border-radius:6px;font-size:12.5px;white-space:nowrap}
 #toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}#toast.show{opacity:1}
@@ -129,6 +132,7 @@ body.reporting{overflow:hidden}
     <div class="ctitle">Minutes per week, last 12 weeks</div>
     <div id="weeks"></div>
   </section>
+  <section class="panel" id="garmin"></section>
   <section class="panel" id="health"></section>
   <div id="list"></div>
 </div>
@@ -136,6 +140,7 @@ body.reporting{overflow:hidden}
 <dialog id="viewDlg"></dialog>
 <dialog id="setDlg"></dialog>
 <dialog id="trendDlg"></dialog>
+<dialog id="garminDlg"></dialog>
 <dialog id="healthViewDlg"></dialog>
 <dialog id="healthDlg"></dialog>
 <dialog id="photoDlg"></dialog>
@@ -157,7 +162,7 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-27 · exercise tool v1.6 · health trend report with scan images';
+const VERSION='2026-11-27 · exercise tool v1.7 · Garmin sync: activities and daily health';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
 const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v1',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
@@ -465,7 +470,7 @@ function render(){
   if(list.length>shown) h+=`<button type="button" class="btn" id="more">Show more (${list.length-shown})</button>`;
   $('#list').innerHTML=h||`<p class="empty">${!loaded&&!rows.length?'Loading…':'Nothing logged yet. Tap an exercise above, or drop a .fit file anywhere on this page.'}</p>`;
   $('#err').hidden=!loadError; $('#err').textContent=loadError;
-  renderHealth(); renderPills();
+  renderHealth(); renderGarmin(); renderPills();
 }
 
 /* ---------- pictures ---------- */
@@ -737,7 +742,7 @@ function openSettings(){
 async function exportAll(){
   const all=[];
   for(let from=0;;from+=500){const {data,error}=await sb.from('activities').select('id,data,detail').order('id').range(from,from+499);if(error){toast(sbFail(error));return;}all.push(...data);if(data.length<500)break;}
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'exercise-tool',version:1,rows:all,health})],{type:'application/json'}));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'exercise-tool',version:1,rows:all,health,garmin:gDays})],{type:'application/json'}));
   a.download=`exercise-export-${todayStr()}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
 async function importBackup(file){
@@ -745,12 +750,14 @@ async function importBackup(file){
     const j=JSON.parse(await file.text()); if(j.app!=='exercise-tool'||!Array.isArray(j.rows)) throw new Error('That is not an Exercise Tool backup.');
     const fresh=j.rows.filter(r=>r.id&&r.data&&TYPES[r.data.type]&&!rowById(r.id));
     const recs=healthState==='ok'?(j.health||[]).filter(r=>r.id&&r.data&&r.data.values&&KINDS[r.kind]&&!healthById(r.id)):[];
-    if(!fresh.length&&!recs.length){toast('Nothing new in that backup.');return;}
-    if(await ask('Import backup',`${fresh.length} exercises and ${recs.length} health records will be added. Existing ones are left as they are.`,['Import','Cancel'])!==0) return;
+    const days=gState==='ok'?(Array.isArray(j.garmin)?j.garmin:[]).filter(r=>isDay(r?.local_date)&&!gDays.some(x=>x.local_date===r.local_date)):[];
+    if(!fresh.length&&!recs.length&&!days.length){toast('Nothing new in that backup.');return;}
+    if(await ask('Import backup',`${fresh.length} exercises, ${recs.length} health records and ${days.length} days of Garmin figures will be added. Existing ones are left as they are.`,['Import','Cancel'])!==0) return;
     for(const r of fresh) await insertRow(r.id,r.data,r.detail);
     for(const r of recs){const {error}=await sb.from('health_records').insert({id:r.id,local_date:r.local_date,kind:r.kind,data:cleanHealth(r).data,rev:1}).select('id').single();if(error)throw new Error(sbFail(error));}
     if(recs.length) await loadHealth();
-    toast(`Imported ${fresh.length+recs.length}.`); afterChange();
+    if(days.length){await saveDays(Object.fromEntries(days.map(r=>[r.local_date,cleanDay(r.data)])));renderGarmin();}
+    toast(`Imported ${fresh.length+recs.length+days.length}.`); afterChange();
   }catch(e){toast(e.message);}
 }
 
@@ -772,6 +779,7 @@ async function enterApp(u){
   render();
   if(sb.auth.getUser) sb.auth.getUser().then(({data})=>{if(data&&data.user&&user&&data.user.id===user.id){user=data.user;lsSet(LS.maxHr,data.user.user_metadata?.maxHr||null);lsSet(LS.profile,data.user.user_metadata?.profile||null);redrawGraphs();}}).catch(()=>{});   // picks up zones changed on another device
   const healthReady=loadHealth().catch(e=>console.error(e));
+  loadGarmin().catch(e=>console.error(e));
   if(await loadRows()){
     syncOneDrive(); healthReady.then(()=>syncOneDrive());
     if(wanted){
@@ -787,7 +795,7 @@ async function initDb(){
   if(!window.supabase){showGate('signin','The database library did not load. Check the connection and reload the page.');return;}
   try{sb=window.supabase.createClient(c.url,c.key,{auth:{storageKey:LS.auth,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});}
   catch(e){lsSet(LS.sb,null);showGate('connect',e.message);return;}
-  sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'&&user){user=null;rows=[];loaded=false;health=[];healthState='loading';healthQueue=[];healthBusy='';lsSet(LS.cache,null);lsSet(LS.profile,null);lsSet(LS.maxHr,null);$$('dialog[open]').forEach(d=>d.close());showGate('signin');}});
+  sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'&&user){user=null;rows=[];loaded=false;health=[];healthState='loading';healthQueue=[];healthBusy='';gDays=[];gState='loading';gResult=null;gBusy='';lsSet(GLS.synced,null);lsSet(GLS.pending,null);lsSet(LS.cache,null);lsSet(LS.profile,null);lsSet(LS.maxHr,null);$$('dialog[open]').forEach(d=>d.close());showGate('signin');}});
   const {data}=await sb.auth.getSession();
   if(data.session) await enterApp(data.session.user); else showGate('signin');
 }
@@ -812,7 +820,7 @@ document.addEventListener('click',async e=>{
   const t=e.target.closest('button,[data-close]'); if(!t) return;
   const d=t.dataset;
   if(t.hasAttribute('data-close')) return t.closest('dialog').close();
-  if(reportClick(t)||healthClick(t)) return;
+  if(reportClick(t)||healthClick(t)||garminClick(t)) return;
   if(d.add) return openEditor(null,{type:d.add});
   if(d.filter!==undefined){filterType=d.filter;shown=60;return render();}
   if(d.period){period=d.period;return render();}
@@ -846,7 +854,7 @@ document.addEventListener('click',async e=>{
     case 'editView':{const id=$('#viewDlg').dataset.id;$('#viewDlg').close();openEditor(id);break;}
     case 'setBtn':case 'dbPill':openSettings();break;
     case 'odPill':if(!clientId()||odState==='error') openSettings(); else if(msalAccount&&odState!=='signedout') syncOneDrive(); else msSignIn();break;
-    case 'reload':await loadRows();await loadHealth();syncOneDrive();openSettings();break;
+    case 'reload':await loadRows();await loadHealth();await loadGarmin();syncOneDrive();openSettings();break;
     case 'sbOut':$('#setDlg').close();await sb.auth.signOut({scope:'local'});break;
     case 'sbForget':lsSet(LS.sb,null);lsSet(LS.auth,null);lsSet(LS.cache,null);location.reload();break;
     case 'saveCid':lsSet(LS.client,$('#cid').value.trim()||null);location.reload();break;
@@ -890,7 +898,7 @@ document.addEventListener('pointermove',e=>{
   tip.textContent=text; tip.hidden=false;
   tip.style.left=Math.min(e.clientX+12,innerWidth-tip.offsetWidth-8)+'px'; tip.style.top=Math.max(8,e.clientY-36)+'px';
 });
-document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&user&&!$('#editDlg').open){if(await loadRows()){await loadHealth();syncOneDrive();}}});
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&user&&!$('#editDlg').open){if(await loadRows()){await loadHealth();if(!gBusy)await loadGarmin();syncOneDrive();}}});
 let rz; window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(user)renderWeeks();},150);});
 
 /* ---------- FIT file reader (Garmin / Zwift) ---------- */
@@ -1949,6 +1957,294 @@ function reportClick(t){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#report').hidden&&!$('dialog[open]'))closeReport();});
 
+/* ---------- Garmin sync: new activities and daily health, through the relay in the Supabase project ---------- */
+const GARMIN_SQL="-- Garmin daily health (sleep, HRV, resting heart rate, stress, Body Battery, steps, weight):\n-- run once in Supabase > SQL Editor (safe to run again)\ncreate table if not exists public.garmin_days (\n  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,\n  local_date  date not null,\n  data        jsonb not null,\n  updated_at  timestamptz not null default now(),\n  primary key (user_id, local_date)\n);\n\nalter table public.garmin_days enable row level security;\ndrop policy if exists \"own garmin days\" on public.garmin_days;\ncreate policy \"own garmin days\" on public.garmin_days\n  for all to authenticated\n  using (user_id = (select auth.uid()))\n  with check (user_id = (select auth.uid()));\n\nrevoke all on public.garmin_days from anon;\ngrant select, insert, update, delete on public.garmin_days to authenticated;\n";
+const GARMIN_RELAY="// Supabase Edge Function \"garmin\": a read-only relay between the Exercise Tool and the Garmin Connect Personal API.\n// The Garmin key is read from this project's secrets. It is never in the web page and is never sent to the browser.\n// Secrets to add (Supabase > Edge Functions > Secrets):\n//   GARMIN_API_KEY      the personal key from Garmin Connect\n//   GARMIN_OWNER_EMAIL  the email you sign in to the Exercise Tool with: nobody else may use the relay\n// Turn OFF \"Verify JWT with legacy secret\" for this function: it checks the signed-in user itself.\n\nconst GARMIN = 'https://personal.connectapi.garmin.com';\nconst ORIGINS = ['https://mkirsten583.github.io'];\nconst D = '\\\\d{4}-\\\\d{2}-\\\\d{2}';\nconst DATE = new RegExp(`^${D}$`);\nconst NUM = /^\\d{1,4}$/;\n// Only these Garmin addresses can be read, each with only these settings.\nconst ALLOWED = [\n  [/^\\/usersummary-service\\/v2\\/dailysummaries$/, { startDate: DATE, endDate: DATE }],\n  [/^\\/sleep-service\\/sleep\\/dailySleepSummariesByDate$/, { startDate: DATE, endDate: DATE }],\n  [new RegExp(`^/hrv-service/hrv/daily/${D}/${D}$`), {}],\n  [new RegExp(`^/weight-service/weight/range/${D}/${D}$`), { includeAll: /^(true|false)$/ }],\n  [/^\\/activitylist-service\\/activities\\/search\\/activities$/, { start: NUM, limit: NUM, startDate: DATE, endDate: DATE }],\n  [/^\\/download-service\\/files\\/activity\\/\\d{1,20}$/, {}],\n];\n\nlet token = null, expires = 0;   // kept only while this copy of the function stays awake\n\nconst headers = (req) => {\n  const o = req.headers.get('origin') || '';\n  return {\n    'Access-Control-Allow-Origin': ORIGINS.includes(o) ? o : ORIGINS[0],\n    'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',\n    'Access-Control-Allow-Methods': 'POST, OPTIONS',\n    'Cache-Control': 'no-store',\n    'Vary': 'Origin',\n  };\n};\nconst reply = (req, status, body) =>\n  new Response(JSON.stringify(body), { status, headers: { ...headers(req), 'Content-Type': 'application/json' } });\nclass Problem extends Error {\n  constructor(status, code, message) { super(message); this.status = status; this.code = code; }\n}\n\nasync function checkOwner(req) {\n  const owner = (Deno.env.get('GARMIN_OWNER_EMAIL') || '').trim().toLowerCase();\n  if (!owner) throw new Problem(500, 'setup', 'Add the GARMIN_OWNER_EMAIL secret in Supabase.');\n  const auth = req.headers.get('authorization') || '';\n  const apikey = req.headers.get('apikey') || Deno.env.get('SUPABASE_ANON_KEY') || '';\n  const r = await fetch(Deno.env.get('SUPABASE_URL') + '/auth/v1/user', { headers: { Authorization: auth, apikey } });\n  if (!r.ok) throw new Problem(401, 'signin', 'Sign in to the Exercise Tool again.');\n  const user = await r.json();\n  if ((user.email || '').toLowerCase() !== owner) throw new Problem(403, 'owner', 'This relay only works for its owner. Check the GARMIN_OWNER_EMAIL secret.');\n}\n\nasync function getToken() {\n  if (token && Date.now() < expires) return token;\n  const key = (Deno.env.get('GARMIN_API_KEY') || '').trim();\n  if (!key) throw new Problem(500, 'setup', 'Add the GARMIN_API_KEY secret in Supabase.');\n  if (!/^[\\x21-\\x7e]+$/.test(key)) throw new Problem(500, 'key', 'The GARMIN_API_KEY secret has spaces or line breaks in it. Paste the key again.');\n  const r = await fetch(GARMIN + '/personalapitoken-service/personal-api/personal-api-key/token',\n    { method: 'POST', headers: { Authorization: 'ApiKey ' + key, Accept: '*/*' } });\n  const text = (await r.text()).trim();\n  if (r.status === 401 || r.status === 403) throw new Problem(502, 'key', 'Garmin refused the key: it is wrong, expired or revoked. Create a new key and replace the GARMIN_API_KEY secret.');\n  if (r.status === 429) throw new Problem(429, 'busy', 'Garmin asked for a pause. Try again later.');\n  if (!r.ok || !text) throw new Problem(502, 'garmin', `Garmin did not give access (HTTP ${r.status}). Try again later.`);\n  let value = text.replace(/^\"|\"$/g, ''), seconds = 0;\n  if (text.startsWith('{')) {\n    let j; try { j = JSON.parse(text); } catch { throw new Problem(502, 'garmin', 'Garmin sent an access reply that could not be read.'); }\n    value = j.access_token || j.accessToken || j.token || '';\n    seconds = Number(j.expires_in || j.expiresIn) || 0;\n  }\n  if (!/^[\\x21-\\x7e]+$/.test(value)) throw new Problem(502, 'garmin', 'Garmin sent no usable access token.');\n  token = value;\n  expires = Date.now() + (seconds > 120 ? seconds - 60 : 23 * 3600) * 1000;\n  return token;\n}\n\nasync function garminGet(path, query) {\n  const url = GARMIN + path + (Object.keys(query).length ? '?' + new URLSearchParams(query) : '');\n  const send = async (accept) => fetch(url, { headers: { Authorization: 'Bearer ' + await getToken(), Accept: accept } });\n  let accept = path.startsWith('/download-service/') ? '*/*' : 'application/json';\n  let r = await send(accept);\n  if (r.status === 401) { token = null; r = await send(accept); }\n  if (r.status === 406) r = await send('*/*');\n  return r;\n}\n\nDeno.serve(async (req) => {\n  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: headers(req) });\n  try {\n    if (req.method !== 'POST') throw new Problem(405, 'request', 'Not allowed.');\n    await checkOwner(req);\n    let body; try { body = await req.json(); } catch { throw new Problem(400, 'request', 'Not understood.'); }\n    const path = String(body?.path || '');\n    if (path === 'ping') { await getToken(); return reply(req, 200, { ok: true }); }\n    const rule = ALLOWED.find(([re]) => re.test(path));\n    if (!rule) throw new Problem(400, 'request', 'That Garmin address is not allowed.');\n    const query = {};\n    for (const [k, v] of Object.entries(body.query || {})) {\n      if (!Object.hasOwn(rule[1], k) || !rule[1][k].test(String(v))) throw new Problem(400, 'request', 'That setting is not allowed: ' + k.slice(0, 20));\n      query[k] = String(v);\n    }\n    const r = await garminGet(path, query);\n    if (r.status === 204) return new Response(null, { status: 204, headers: headers(req) });\n    if (r.status === 429) throw new Problem(429, 'busy', 'Garmin asked for a pause. Try again later.');\n    if (!r.ok) throw new Problem(502, 'garmin', `Garmin answered HTTP ${r.status}.`);\n    return new Response(await r.arrayBuffer(), { status: 200, headers: { ...headers(req), 'Content-Type': r.headers.get('content-type') || 'application/octet-stream' } });\n  } catch (e) {\n    if (e instanceof Problem) return reply(req, e.status, { code: e.code, error: e.message });\n    console.error(e.message);\n    return reply(req, 502, { code: 'garmin', error: 'The relay could not reach Garmin. Try again later.' });\n  }\n});\n";
+const GLS={synced:'exercise-garmin-synced-v1',pending:'exercise-garmin-pending-v1'};
+/* key, lowest and highest value accepted */
+const GFIELDS={sleepH:[0.1,24],deepH:[0,24],lightH:[0,24],remH:[0,24],awakeH:[0,24],sleepScore:[1,100],rhr:[20,200],hrv:[1,400],hrvWeek:[1,400],stress:[0,100],bbHigh:[0,100],bbLow:[0,100],steps:[1,200000],stepGoal:[1,200000],weight:[25,300],bodyFat:[2,70]};
+const GCHARTS=[['Sleep','h',[['sleepH','Asleep']]],['Deep and REM sleep','h',[['deepH','Deep'],['remH','REM']]],['Sleep score','out of 100',[['sleepScore','Score']]],['Resting heart rate','bpm',[['rhr','Resting']]],['Heart rate variability (HRV)','ms',[['hrv','Last night'],['hrvWeek','7-day average']]],['Stress, daily average','',[['stress','Stress']]],['Body Battery','',[['bbHigh','Highest'],['bbLow','Lowest']]],['Steps','',[['steps','Steps']],'bar'],['Weight','kg',[['weight','Weight']]]];
+const GTILES=[['sleepH','Sleep',v=>durText(v*3600)],['sleepScore','Sleep score',v=>v],['rhr','Resting HR',v=>v+' bpm'],['hrv','HRV',v=>v+' ms'],['stress','Stress',v=>v],['bbHigh','Body Battery high',v=>v],['steps','Steps',v=>v.toLocaleString('en-AU')],['weight','Weight',v=>v+' kg']];
+let gDays=[], gState='loading', gError='', gBusy='', gResult=null, gRange=90;
+
+const addDays=(s,n)=>{const d=dateOf(s);d.setDate(d.getDate()+n);return ymd(d);};
+const isDay=s=>typeof s==='string'&&/^\d{4}-\d\d-\d\d$/.test(s);
+/* only known figures within sensible limits are kept, whatever Garmin or a backup holds */
+function cleanDay(d){
+  const out={};
+  for(const [k,[min,max]] of Object.entries(GFIELDS)){const v=d?.[k];if(Number.isFinite(v)&&v>=min&&v<=max) out[k]=v;}
+  for(const k of ['bed','wake']) if(/^\d\d:\d\d$/.test(d?.[k]||'')) out[k]=d[k];
+  const acts=(Array.isArray(d?.acts)?d.acts:[]).filter(Number.isSafeInteger); if(acts.length) out.acts=acts;
+  return out;
+}
+const cleanDayRow=r=>({local_date:r.local_date,data:cleanDay(r.data)});
+const noGarminTable=e=>e&&(e.code==='PGRST205'||e.code==='42P01'||/garmin_days.*(schema cache|does not exist)|could not find the table/i.test(e.message||''));
+async function loadGarmin(){
+  if(!sb||!user) return false;
+  const all=[];
+  for(let from=0;;from+=1000){
+    const {data,error}=await sb.from('garmin_days').select('local_date,data').order('local_date',{ascending:false}).range(from,from+999);
+    if(error){gState=noGarminTable(error)?'setup':'error';gError=sbFail(error);renderGarmin();return false;}
+    all.push(...data); if(data.length<1000) break;
+  }
+  gDays=all.map(cleanDayRow).sort((a,b)=>b.local_date.localeCompare(a.local_date)); gState='ok'; gError=''; renderGarmin(); return true;
+}
+/* new figures are laid over what is already held: a reply with gaps never erases anything */
+async function saveDays(patches){
+  const list=Object.entries(patches).map(([date,p])=>{
+    const old=gDays.find(r=>r.local_date===date)?.data||{}, data=cleanDay({...old,...p,acts:[...new Set([...(old.acts||[]),...(p.acts||[])])]});
+    return {user_id:user.id,local_date:date,data,updated_at:new Date().toISOString()};
+  }).filter(r=>Object.keys(r.data).length);
+  if(!list.length) return;
+  for(let i=0;i<list.length;i+=200){
+    const {error}=await sb.from('garmin_days').upsert(list.slice(i,i+200),{onConflict:'user_id,local_date'});
+    if(error) throw new Error(sbFail(error));
+  }
+  for(const r of list){const i=gDays.findIndex(x=>x.local_date===r.local_date), row={local_date:r.local_date,data:r.data}; if(i<0) gDays.push(row); else gDays[i]=row;}
+  gDays.sort((a,b)=>b.local_date.localeCompare(a.local_date));
+}
+
+/* ----- talking to the relay ----- */
+class RelayProblem extends Error{constructor(code,message){super(message);this.code=code;}}
+const STOPS=['relay','signin','owner','setup','key','busy'];   // no point asking for anything else after one of these
+async function gCall(path,query,binary){
+  const {data}=await sb.auth.getSession(), token=data.session?.access_token;
+  const c=sbConfig(); let r;
+  try{r=await fetch(c.url+'/functions/v1/garmin',{method:'POST',headers:{apikey:c.key,Authorization:'Bearer '+(token||''),'Content-Type':'application/json'},body:JSON.stringify({path,query:query||{}})});}
+  catch(e){throw new RelayProblem('relay','The Garmin relay could not be reached. Check the connection, and that the "garmin" function is set up in Supabase.');}
+  if(r.status===204) return null;
+  if(!r.ok){
+    let j={}; try{j=await r.json();}catch(e){}
+    if(j.code&&j.error) throw new RelayProblem(j.code,String(j.error).slice(0,200));
+    if(r.status===404) throw new RelayProblem('relay','There is no "garmin" function in Supabase yet.');
+    if(r.status===401) throw new RelayProblem('signin','Supabase refused the request. In the garmin function, turn off "Verify JWT with legacy secret".');
+    throw new RelayProblem(r.status===429?'busy':'garmin',`The relay answered HTTP ${r.status}.`);
+  }
+  if(binary) return r.arrayBuffer();
+  const text=await r.text(); if(!text.trim()) return null;
+  try{return JSON.parse(text);}catch(e){throw new RelayProblem('garmin','Garmin sent something that could not be read.');}
+}
+/* the names and kinds of the fields in a reply, never their values: safe to share when a layout is not recognised */
+function shapeOf(v,depth=0){
+  if(Array.isArray(v)) return v.length&&depth<5?[shapeOf(v[0],depth+1)]:[];
+  if(v&&typeof v==='object') return depth<5?Object.fromEntries(Object.entries(v).slice(0,60).map(([k,x])=>[/^[A-Za-z_]\w{0,40}$/.test(k)?k:'(key)',shapeOf(x,depth+1)])):'object';
+  return v===null?'null':typeof v;
+}
+const asList=(v,...names)=>{if(Array.isArray(v))return v;for(const n of names)if(Array.isArray(v?.[n]))return v[n];return null;};
+const pick=o=>Object.fromEntries(Object.entries(o).filter(([,v])=>v!==undefined&&v!==null));
+const hours=s=>Number.isFinite(s)?Math.round(s/36)/100:undefined;
+const clock=ms=>{const d=new Date(Number.isFinite(ms)?ms:NaN);return Number.isNaN(d.getTime())?undefined:d.toISOString().slice(11,16);};   // Garmin's "local" times are local time written as if UTC
+const whole=v=>Number.isFinite(v)?Math.round(v):undefined;
+/* each source: its request for a date range, the list inside the reply, and one day's figures from one item */
+const GSOURCES=[
+  {name:'Daily summary (resting heart rate, stress, Body Battery, steps)',req:(a,b)=>['/usersummary-service/v2/dailysummaries',{startDate:a,endDate:b}],list:j=>asList(j,'data'),
+   day:x=>[x.calendarDate,{rhr:x.heartRate?.restingValue,stress:whole(x.stress?.avgLevel),bbHigh:x.bodyBattery?.maxValue,bbLow:x.bodyBattery?.minValue,steps:x.movement?.steps?.value,stepGoal:x.movement?.steps?.goal}]},
+  {name:'Sleep',req:(a,b)=>['/sleep-service/sleep/dailySleepSummariesByDate',{startDate:a,endDate:b}],list:j=>asList(j,'data','dailySleeps','sleepSummaries'),
+   day:x=>{const n=x.dailySleepDTO||x;return [n.calendarDate,{sleepH:hours(n.sleepTimeSeconds),deepH:hours(n.deepSleepSeconds),lightH:hours(n.lightSleepSeconds),remH:hours(n.remSleepSeconds),awakeH:hours(n.awakeSleepSeconds),sleepScore:n.sleepScores?.overall?.value,bed:clock(n.sleepStartTimestampLocal),wake:clock(n.sleepEndTimestampLocal)}];}},
+  {name:'Heart rate variability',req:(a,b)=>[`/hrv-service/hrv/daily/${a}/${b}`,{}],list:j=>asList(j,'hrvSummaries'),
+   day:x=>[x.calendarDate,{hrv:whole(x.lastNightAvg),hrvWeek:whole(x.weeklyAvg)}]},
+  {name:'Weight',req:(a,b)=>[`/weight-service/weight/range/${a}/${b}`,{}],list:j=>asList(j,'dailyWeightSummaries','dateWeightList'),
+   day:x=>{const w=x.latestWeight||x, g=w.weight, date=x.summaryDate||w.calendarDate;return [date,{weight:Number.isFinite(g)?Math.round(g/100)/10:undefined,bodyFat:w.bodyFat}];}},
+];
+const spans=(from,to,size=28)=>{const out=[];for(let a=from;a<=to;a=addDays(a,size))out.push([a,addDays(a,size-1)>to?to:addDays(a,size-1)]);return out;};
+const say=t=>{gBusy=t;renderGarmin();};
+
+async function syncHealthDays(from,to,res){
+  for(const src of GSOURCES){
+    let raw=0, got=0, sample=null;
+    try{
+      for(const [a,b] of spans(from,to)){
+        say(`Reading ${src.name.split(' (')[0].toLowerCase()} from ${fmtDate(a)}…`);
+        const [path,query]=src.req(a,b), j=await gCall(path,query); if(j===null) continue;
+        const list=src.list(j);
+        if(!list){sample=sample||j;raw++;continue;}
+        const patches={};
+        for(const item of list){
+          if(!item||typeof item!=='object') continue; raw++; sample=sample||item;
+          const [date,fields]=src.day(item); if(!isDay(date)) continue;
+          const clean=cleanDay(pick(fields)); if(Object.keys(clean).length){patches[date]=clean;got++;}
+        }
+        await saveDays(patches);
+      }
+      res.counts.push([src.name,got]);
+      if(raw&&!got) res.unknown.push({source:src.name,layout:shapeOf(sample)});
+    }catch(e){
+      if(!(e instanceof RelayProblem)||STOPS.includes(e.code)) throw e;
+      res.failed.push(`${src.name}: ${e.message}`);
+    }
+  }
+}
+async function listActivities(from,to){
+  const all=[];
+  for(let start=0;start<1000;start+=50){
+    const j=await gCall('/activitylist-service/activities/search/activities',{start:String(start),limit:'50',startDate:from,endDate:to});
+    const list=j===null?[]:asList(j,'activityList','activities');
+    if(!list) throw new RelayProblem('garmin','The activity list came in a layout this page does not know.');
+    all.push(...list.filter(x=>x&&Number.isSafeInteger(x.activityId))); if(list.length<50) break;
+  }
+  return all;
+}
+async function importGarmin(item,res){
+  const id=item.activityId, day=String(item.startTimeLocal||'').slice(0,10);
+  const handled=gDays.some(r=>r.data.acts?.includes(id))||rows.some(r=>r.data.garminId===id);
+  if(handled){res.have++;return;}
+  const buf=await gCall(`/download-service/files/activity/${id}`,{},true);
+  if(!buf) throw new Error('Garmin has no file for it.');
+  const head=new Uint8Array(buf,0,Math.min(2,buf.byteLength));
+  const files=head[0]===0x50&&head[1]===0x4b?await unzipFits(buf):[{name:id+'.fit',bytes:new Uint8Array(buf)}];
+  const x=files[0], sessions=parseFit(x.bytes.buffer.slice(x.bytes.byteOffset,x.bytes.byteOffset+x.bytes.byteLength));
+  const blob=new Blob([x.bytes],{type:'application/octet-stream'});
+  let date=isDay(day)?day:null;
+  for(const s of sessions){
+    const p=s.activity; date=date||p.date;
+    if(!p.type){res.other++;continue;}
+    if(rows.some(r=>sameImport(r.data,p))){res.have++;continue;}
+    const manual=rows.find(r=>r.data.date===p.date&&r.data.type===p.type&&!(r.data.files||[]).some(f=>f.kind==='fit'));
+    const attach=manual&&await ask('Add to the exercise already logged?',`"${titleOf(manual.data)}" is logged on ${fmtDate(p.date)} without a FIT file.`,['Add the file to it','Create a new one'])===0;
+    const found=Object.fromEntries(Object.entries(p).filter(([,v])=>v!==null&&v!==undefined));
+    const a=attach?{...manual.data,...found}:{...found}; delete a.ai;
+    a.garminId=id; if(!a.title&&item.activityName) a.title=String(item.activityName).slice(0,120);
+    const meta={id:uid(),kind:'fit',name:x.name,size:blob.size,uploaded:false};
+    meta.path=filePath(a,meta,'FIT Files'); a.files=[...(a.files||[]),meta];
+    await idbPut(meta.id,{blob});
+    if(attach) await updateRow(manual.id,manual.rev,a,s.detail); else await insertRow(uid(),a,s.detail);
+    res.added++;
+  }
+  if(date) await saveDays({[date]:{acts:[id]}});
+}
+async function syncActivities(from,to,res){
+  say('Looking for new activities…');
+  const list=await listActivities(from,to);
+  let n=0;
+  for(const item of list.reverse()){   // oldest first, so an interrupted sync leaves no holes behind it
+    say(`Checking activity ${++n} of ${list.length}…`);
+    try{await importGarmin(item,res);}
+    catch(e){
+      if(e instanceof RelayProblem&&STOPS.includes(e.code)) throw e;
+      if(e.conflict){await loadRows();}
+      res.failed.push(`Activity on ${String(item.startTimeLocal||'').slice(0,10)}: ${e.message}`);
+    }
+  }
+}
+async function garminSync(days){
+  if(gBusy) return;
+  if(!loaded){toast('Still connecting to the database. Try again in a moment.');return;}
+  if(gState!=='ok'&&!await loadGarmin()) return;
+  const today=todayStr(), latest=gDays.find(r=>Object.keys(r.data).some(k=>k!=='acts'))?.local_date;
+  if(!days&&!latest&&!lsGet(GLS.pending)){
+    const i=await ask('How far back?','The first sync reads your Garmin activities and daily health. You can fetch more later.',['30 days','90 days','1 year','Cancel']);
+    if(i<0||i>2) return; days=[30,90,365][i];
+  }
+  let from;
+  if(days) from=addDays(today,1-days);
+  else{from=latest?addDays(latest,-6):addDays(today,-29);}   // the last week is read again: Garmin fills in late figures
+  const pending=lsGet(GLS.pending); if(isDay(pending)&&pending<from) from=pending;
+  const res={added:0,have:0,other:0,counts:[],failed:[],unknown:[],stopped:''};
+  gResult=null; say('Connecting to Garmin…');
+  try{
+    await gCall('ping');
+    lsSet(GLS.pending,from);              // stays until the sync gets to the end, so a stopped one carries on from here
+    await syncHealthDays(from,today,res);
+    await syncActivities(from,today,res);
+    lsSet(GLS.pending,null); lsSet(GLS.synced,Date.now());
+  }catch(e){console.error(e);res.stopped=e.message;res.code=e.code;}
+  gBusy=''; gResult=res; if(res.added) afterChange(); renderGarmin();
+}
+
+/* ----- the panel on the main page ----- */
+function garminSetup(){
+  return `<details class="gsetup"><summary>How to set up Garmin sync</summary><ol>
+    <li>In Supabase, open <b>SQL Editor</b>, paste the setup script and run it. <button type="button" class="linkbtn" id="gCopySql">Copy setup script</button></li>
+    <li>In Supabase, open <b>Edge Functions</b>, create a function with the editor, name it <b>garmin</b>, replace its code with the relay code and deploy it. <button type="button" class="linkbtn" id="gCopyRelay">Copy relay code</button></li>
+    <li>In that function's settings, turn <b>off</b> "Verify JWT with legacy secret". The relay checks your sign-in itself.</li>
+    <li>In Garmin Connect on the web, open <a href="https://connect.garmin.com/app/settings/personalApiToken" target="_blank" rel="noopener">Settings, Personal API Key</a> and create a key. It is shown only once.</li>
+    <li>In Supabase, open <b>Edge Functions, Secrets</b> and add <b>GARMIN_API_KEY</b> (the key) and <b>GARMIN_OWNER_EMAIL</b> (the email you sign in here with). Do not put the key anywhere else.</li>
+    <li>Press <b>Sync Garmin</b>.</li></ol><textarea id="gText" rows="6" readonly hidden></textarea></details>`;
+}
+function garminResult(r){
+  let h='';
+  if(r.stopped) h+=`<p class="bad" role="alert">${esc(r.stopped)}${r.code==='busy'?' What was read is saved; press Sync Garmin later to carry on.':''}</p>`;
+  if(!r.stopped||r.added||r.counts.length) h+=`<p role="status">${r.added} new exercise${r.added===1?'':'s'}${r.have?`, ${r.have} already here`:''}${r.other?`, ${r.other} of other kinds left out`:''}.${r.counts.length?` Days read: ${r.counts.map(([n,c])=>`${n.split(' (')[0].toLowerCase()} ${c}`).join(', ')}.`:''}</p>`;
+  if(r.failed.length) h+=`<p class="warnnote">${r.failed.slice(0,5).map(esc).join('<br>')}${r.failed.length>5?`<br>and ${r.failed.length-5} more`:''}</p>`;
+  if(r.unknown.length) h+=`<p class="warnnote">Garmin sent ${r.unknown.map(u=>esc(u.source.split(' (')[0].toLowerCase())).join(', ')} in a layout this page does not know. <button type="button" class="linkbtn" id="gCopyLayout">Copy layout details</button> (field names only, no figures) and send them to Claude.</p>`;
+  return h;
+}
+function renderGarmin(){
+  const box=$('#garmin'); if(!box) return;
+  const open=$('.gsetup',box)?.open, has=gDays.some(r=>Object.keys(r.data).some(k=>k!=='acts'));
+  let h=`<div class="hhead"><h2>Garmin</h2><div class="btnrow">${gState==='ok'?`<button type="button" class="btn primary" id="gSync" ${gBusy?'disabled':''}>Sync Garmin</button>`:''}${has?'<button type="button" class="btn" id="gTrends">Daily trends</button>':''}</div></div>`;
+  if(gState==='setup') h+=`<p class="warnnote">To bring in new activities and daily health straight from Garmin, finish the setup below, then press Check again.</p>${garminSetup()}<div class="btnrow"><button type="button" class="btn" id="gRetry">Check again</button></div>`;
+  else if(gState==='error') h+=`<p class="bad">${esc(gError)}</p><button type="button" class="btn" id="gRetry">Try again</button>`;
+  else if(gState==='loading') h+='<p class="muted">Loading…</p>';
+  else{
+    if(has){
+      const tiles=GTILES.map(([k,label,fmt])=>{const r=gDays.find(r=>r.data[k]!=null);if(!r||r.local_date<addDays(todayStr(),-30))return '';
+        return `<div class="stat"><span>${label}</span><b>${esc(fmt(r.data[k]))}</b><small class="muted">${r.local_date===todayStr()?'today':dateOf(r.local_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</small></div>`;}).join('');
+      h+=tiles?`<div class="metrics">${tiles}</div>`:'<p class="muted">No daily figures in the last 30 days.</p>';
+    }
+    if(gBusy) h+=`<p class="muted" role="status">${esc(gBusy)}</p>`;
+    else{
+      if(gResult) h+=garminResult(gResult);
+      const at=lsGet(GLS.synced);
+      h+=`<p class="muted hfoot">${at?`Last synced on this device ${new Date(at).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}. <button type="button" class="linkbtn" id="gMore">Fetch more history</button>`:has?'<button type="button" class="linkbtn" id="gMore">Fetch more history</button>':'Press Sync Garmin to bring in activities and daily health.'}</p>`;
+      if(!has||gResult?.stopped) h+=garminSetup();
+    }
+  }
+  box.innerHTML=h; if(open&&$('.gsetup',box)) $('.gsetup',box).open=true;
+}
+async function gCopy(text,done){
+  try{await navigator.clipboard.writeText(text);toast(done);}
+  catch(e){const t=$('#gText');if(!t){toast('Copying was blocked by the browser.');return;}t.closest('details').open=true;t.hidden=false;t.value=text;t.select();toast('Select all the text in the box and copy it.');}
+}
+
+/* ----- daily trends ----- */
+function dailyChart([title,unit,series,kind],days,from,to){
+  const t0=dateOf(from).getTime(), t1=dateOf(to).getTime(), DAY=86400000, n=Math.round((t1-t0)/DAY)+1;
+  const lines=series.map(([key,name],i)=>({key,name,i,pts:days.filter(r=>r.data[key]!=null).map(r=>({d:r.local_date,k:Math.round((dateOf(r.local_date).getTime()-t0)/DAY),v:r.data[key]}))})).filter(s=>s.pts.length);
+  if(!lines.length) return '';
+  const all=lines.flatMap(s=>s.pts.map(p=>p.v)), bar=kind==='bar';
+  let lo=bar?0:Math.min(...all), hi=Math.max(...all); const pad=(hi-lo)*.12||Math.max(1,hi*.1); if(!bar) lo=Math.max(0,lo-pad); hi+=pad;
+  const W=560,H=140,L=48,R=6, step=(W-L-R)/n, x=k=>L+(k+.5)*step, y=v=>H-6-(v-lo)/(hi-lo)*(H-14);
+  const num=v=>{const k=hi-lo<5?100:hi-lo<50?10:1;return (Math.round(v*k)/k).toLocaleString('en-AU');};
+  const day=d=>dateOf(d).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'2-digit'});
+  const avg=s=>Math.round(s.pts.reduce((a,p)=>a+p.v,0)/s.pts.length*10)/10;
+  let marks='';
+  for(const s of lines){
+    if(bar){const w=Math.max(1,step-Math.min(2,step*.3));marks+=s.pts.map(p=>`<rect class="s${s.i}" x="${(x(p.k)-w/2).toFixed(1)}" y="${y(p.v).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0,H-6-y(p.v)).toFixed(1)}"/>`).join('');continue;}
+    let run=[]; const flush=()=>{if(run.length>1) marks+=`<polyline class="s${s.i}" points="${run.map(p=>`${x(p.k).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ')}"/>`;else if(run.length) marks+=`<circle class="s${s.i}" cx="${x(run[0].k).toFixed(1)}" cy="${y(run[0].v).toFixed(1)}" r="4"/>`;run=[];};
+    for(const p of s.pts.slice().sort((a,b)=>a.k-b.k)){if(run.length&&p.k-run[run.length-1].k>(s.key==='weight'?3650:1)) flush();run.push(p);}   // weigh-ins are occasional: joined across the gaps
+    flush();
+  }
+  const hits=Array.from({length:n},(_,k)=>{const at=lines.map(s=>({s,p:s.pts.find(p=>p.k===k)})).filter(o=>o.p);if(!at.length)return '';
+    return `<rect class="hit" x="${(L+k*step).toFixed(1)}" y="0" width="${step.toFixed(2)}" height="${H}" data-tip="${day(at[0].p.d)}: ${at.map(o=>`${lines.length>1?o.s.name+' ':''}${o.p.v.toLocaleString('en-AU')}`).join(', ')}${unit&&!/^out of/.test(unit)?' '+unit:''}"/>`;}).join('');
+  return `<figure class="trend daily"><figcaption><b>${title}${unit?` (${unit})`:''}</b></figcaption>
+    <div class="legend">${lines.map(s=>`<span>${lines.length>1?`<i class="s${s.i}"></i>`:''}${s.name}: average <b>${avg(s).toLocaleString('en-AU')}</b></span>`).join('')}</div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title}, daily">${[lo,(lo+hi)/2,hi].map(v=>`<line class="grid" x1="${L-2}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-7}" y="${y(v)+4}" text-anchor="end">${num(v)}</text>`).join('')}${marks}${hits}</svg>
+    <div class="axis"><span>${day(from)}</span><span>${day(to)}</span></div></figure>`;
+}
+function openGarminTrends(){
+  const d=$('#garminDlg'), to=todayStr(), oldest=gDays.length?gDays[gDays.length-1].local_date:to;
+  const from=gRange?addDays(to,1-gRange):oldest, days=gDays.filter(r=>r.local_date>=from&&r.local_date<=to);
+  const keys=GTILES.filter(([k])=>days.some(r=>r.data[k]!=null));
+  d.innerHTML=`<div class="dhead">Garmin daily trends</div><div class="dbody"><div class="chips">${[[30,'30 days'],[90,'90 days'],[365,'1 year'],[0,'All']].map(([v,l])=>`<button type="button" class="chip ${gRange===v?'on':''}" data-grange="${v}">${l}</button>`).join('')}</div>
+    ${GCHARTS.map(c=>dailyChart(c,days,from,to)).join('')||'<p class="muted">No daily figures in this period.</p>'}
+    ${keys.length?`<details><summary>Show figures</summary><div class="scrollx"><table class="compare"><tr><th>Date</th>${keys.map(k=>`<th>${k[1]}</th>`).join('')}</tr>${days.filter(r=>keys.some(([k])=>r.data[k]!=null)).map(r=>`<tr><th scope="row">${fmtDate(r.local_date)}</th>${keys.map(([k,,f])=>`<td>${r.data[k]!=null?esc(f(r.data[k])):''}</td>`).join('')}</tr>`).join('')}</table></div></details>`:''}
+    </div><div class="dfoot"><button type="button" class="btn primary" data-close>Close</button></div>`;
+  if(!d.open){d.showModal(); d.scrollTop=0;}
+}
+function garminClick(t){
+  if(t.dataset.grange!==undefined){gRange=+t.dataset.grange;openGarminTrends();return true;}
+  switch(t.id){
+    case 'gSync':garminSync();return true;
+    case 'gMore':ask('Fetch more history','Reads further back in Garmin. Exercises already here are not added twice, and ones you deleted stay deleted.',['90 days','1 year','2 years','Cancel']).then(i=>{if(i>=0&&i<3)garminSync([90,365,730][i]);});return true;
+    case 'gTrends':openGarminTrends();return true;
+    case 'gRetry':gState='loading';renderGarmin();loadGarmin();return true;
+    case 'gCopySql':gCopy(GARMIN_SQL,'Copied. Paste it into the Supabase SQL Editor.');return true;
+    case 'gCopyRelay':gCopy(GARMIN_RELAY,'Copied. Paste it into the garmin function in Supabase.');return true;
+    case 'gCopyLayout':gCopy(JSON.stringify(gResult?.unknown||[],null,1),'Copied the field names.');return true;
+  }
+  return false;
+}
 
 (async function init(){
   const q=new URLSearchParams(location.search), date=q.get('date');
