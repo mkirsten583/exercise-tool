@@ -74,8 +74,8 @@ table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:5px 6px;
 .mapfig figcaption{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:12.5px;margin-top:6px}.mapfig .mapmsg{flex:1;color:var(--muted)}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 2px}.dot.go{background:#12a150}.dot.end{background:#d92d20}
 #mapDlg{width:calc(100vw - 16px);max-width:none}.mapbox.big{height:calc(100dvh - 90px);border:0;border-radius:0}
 .mapbox .leaflet-control-layers label{display:flex;align-items:center;gap:6px;margin:0}.mapbox .leaflet-control-layers input{width:auto;margin:0}.mapbox .leaflet-control-layers label>span{display:flex;align-items:center;gap:6px}.mapbox .leaflet-control-layers,.mapbox .leaflet-control-attribution{color:#222}.mapbox .leaflet-control-attribution{font-size:10px}
-.mars{margin:0}.mars figcaption{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin-bottom:6px}.mars small{color:var(--muted);font-size:12px}.bars{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
-.choc{position:relative;display:block;width:48px;height:22px}.choc svg{display:block;width:48px;height:22px}.choc>svg{opacity:.22}.choc>span{position:absolute;inset:0}.bars .more{font-size:13px}#marsTotal:not(:empty){margin-top:10px}
+.fat{margin:0}.fat figcaption{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin-bottom:6px}.fat small{color:var(--muted);font-size:12px}.blocks{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.fatblk{position:relative;display:block;width:30px;height:22px}.fatblk svg{display:block;width:30px;height:22px}.fatblk>svg{opacity:.22}.fatblk>span{position:absolute;inset:0}.blocks .more{font-size:13px}#fatTotal:not(:empty){margin-top:10px}
 .line{margin:0 0 10px}.line figcaption{display:flex;justify-content:space-between;font-size:12.5px}.plot{position:relative;border-bottom:1px solid var(--line);touch-action:pan-y}.plot svg{display:block;width:100%;height:100px}
 .plot path{fill:none;stroke:var(--data);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}.cross{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);pointer-events:none}
 figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:4px}
@@ -107,7 +107,7 @@ body.reporting{overflow:hidden}
 .rbar .seg{margin:0;background:var(--surface)}.rbar .btn:disabled{opacity:.45}
 .reportbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .pchart svg{display:block;width:100%;height:auto}.pchart .grid{stroke:var(--line)}.pchart text{font-size:11px;fill:var(--muted)}.pchart .hit{fill:transparent}
-.key{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}.pkeys{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px}.rpage .mars{margin-top:12px}.compare td.wraps{white-space:normal;min-width:110px}
+.key{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}.pkeys{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px}.rpage .fat{margin-top:12px}.compare td.wraps{white-space:normal;min-width:110px}
 .prz{display:grid;grid-template-columns:minmax(0,14em) minmax(0,1fr) 9em;gap:8px;align-items:center;padding:3px 0;font-size:12.5px}.prz small{color:var(--muted)}.prbar{height:16px;border-left:1px solid var(--line)}.prbar i{display:block;height:100%;border-radius:0 4px 4px 0}
 @media (max-width:560px){.rpage{padding:12px}.rpage .compare th{white-space:normal}.rpage .compare th,.rpage .compare td{padding-left:4px;padding-right:4px}.rpage .compare th[scope=row]{min-width:84px}.prz{grid-template-columns:minmax(0,1fr) 9em}.prz .prbar{grid-column:1/-1;order:3}}
 #report{position:fixed;inset:0;z-index:5;overflow:auto;background:var(--bg);padding:0 10px 30px}
@@ -146,7 +146,7 @@ body.reporting{overflow:hidden}
   <section class="panel">
     <div class="chips" id="filters"></div>
     <div class="seg" id="period"><button type="button" data-period="week">Week</button><button type="button" data-period="month">Month</button><button type="button" data-period="year">Year</button><button type="button" data-period="all">All</button></div>
-    <div id="stats"></div><div id="marsTotal"></div>
+    <div id="stats"></div><div id="fatTotal"></div>
     <div class="reportbtns"><button type="button" class="btn" id="monthReport">Monthly report</button><button type="button" class="btn" id="quarterReport">Quarterly report</button></div>
     <div class="ctitle">Minutes per week, last 12 weeks</div>
     <div id="weeks"></div>
@@ -182,7 +182,7 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-28 · exercise tool v1.11 · monthly and quarterly reports';
+const VERSION='2026-11-28 · exercise tool v1.12 · calories shown as kg of fat';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
 const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
@@ -444,7 +444,7 @@ function renderStats(){
   const sum=k=>list.reduce((n,a)=>n+(a[k]||0),0);
   $('#stats').innerHTML=[['Sessions',list.length],['Time',durText(sum('duration'))],['Distance',(sum('distance')/1000).toFixed(1)+' km'],['Calories',Math.round(sum('calories')).toLocaleString('en-AU')]]
     .map(([k,v])=>`<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
-  $('#marsTotal').innerHTML=marsHtml(sum('calories'),20);
+  $('#fatTotal').innerHTML=fatHtml(sum('calories'),20);
 }
 function renderWeeks(){
   const end=mondayOf(new Date()), weeks=[];
@@ -688,18 +688,17 @@ async function closeEditor(){
   $('#editDlg').close(); ed=null;
 }
 
-/* ---------- calories burnt shown as chocolate bars ---------- */
-const BAR_CAL=212;          // one 47 g Australian Mars bar (888 kJ)
-const CHOC='<svg viewBox="0 0 48 22" aria-hidden="true"><rect x="1" y="2" width="46" height="18" rx="7" fill="#7a4a24"/><path d="M8 13q4-9 8 0t8 0t8 0t8 0" fill="none" stroke="#b9814f" stroke-width="2.5" stroke-linecap="round"/></svg>';
-function marsHtml(cal,max=12){
+/* ---------- calories burnt shown as body fat (energy equivalent) ---------- */
+const FAT_KCAL=7700;        // energy usually allowed for 1 kg of body fat
+const FATBLOCK='<svg viewBox="0 0 30 22" aria-hidden="true"><rect x="1" y="1" width="28" height="20" rx="5" fill="#f2c94c"/><path d="M6 8q4-4 9 0M14 15q4 3 9-1" fill="none" stroke="#fbe7a1" stroke-width="2.5" stroke-linecap="round"/></svg>';
+function fatHtml(cal,max=12){
   if(!(cal>0)) return '';
-  const n=Math.round(cal/BAR_CAL*10)/10, full=Math.floor(n), part=Math.round((n-full)*10)*10;
-  const one=p=>`<span class="choc">${CHOC}<span style="clip-path:inset(0 ${100-p}% 0 0)">${CHOC}</span></span>`;
-  const shown=Math.min(full,max);
-  const icons=Array(shown).fill(one(100)).join('')+(part&&full<max?one(part):'');
-  const more=full>max||(full===max&&part)?`<b class="more">+ ${(Math.round((n-shown)*10)/10).toLocaleString('en-AU')} more</b>`:'';
-  const words=`${n.toLocaleString('en-AU')} Mars bar${n===1?'':'s'} burnt`;
-  return `<figure class="mars"><figcaption><b>🔥 ${n<0.1?'Less than 0.1 of a Mars bar burnt':'≈ '+words}</b><small>${Math.round(cal).toLocaleString('en-AU')} cal · ${BAR_CAL} cal per 47 g bar</small></figcaption><div class="bars">${icons}${more}</div></figure>`;
+  const kg=cal/FAT_KCAL, places=kg<1?3:2, text=kg.toLocaleString('en-AU',{minimumFractionDigits:places,maximumFractionDigits:places});
+  const full=Math.floor(kg), part=Math.round((kg-full)*100), shown=Math.min(full,max);   // one block per kg, the last part filled
+  const one=p=>`<span class="fatblk">${FATBLOCK}<span style="clip-path:inset(0 ${100-p}% 0 0)">${FATBLOCK}</span></span>`;
+  const icons=Array(shown).fill(one(100)).join('')+(part&&full<max?one(Math.min(part,99)):'');
+  const more=full>max||(full===max&&part)?`<b class="more">+ ${(kg-shown).toLocaleString('en-AU',{maximumFractionDigits:2})} kg more</b>`:'';
+  return `<figure class="fat"><figcaption><b>🔥 ${kg<.001?'Less than 0.001':'≈ '+text} kg of fat burnt</b><small>${Math.round(cal).toLocaleString('en-AU')} cal · energy equivalent at ${FAT_KCAL.toLocaleString('en-AU')} cal per kg</small></figcaption><div class="blocks">${icons}${more}</div></figure>`;
 }
 
 /* ---------- detail view ---------- */
@@ -719,7 +718,7 @@ async function openView(id){
   d.innerHTML=`<div class="dhead t-${a.type}"><span class="ic">${icon(a.type)}</span><span>${esc(titleOf(a))}<small>${fmtDate(a.date)}${a.time?' at '+a.time:''}${a.source&&a.source!=='manual'?' · from '+({zwift:'Zwift',garmin:'Garmin'}[a.source]||'a FIT file'):''}</small></span></div>
   <div class="dbody">
     <div class="metrics">${m.map(([k,v])=>`<div class="stat"><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div>
-    ${marsHtml(+a.calories)}
+    ${fatHtml(+a.calories)}
     ${a.sets&&a.sets.length?`<table><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>kg</th></tr>${a.sets.map(s=>`<tr><td>${esc(s.name)}</td><td>${s.sets||''}</td><td>${s.reps||''}</td><td>${s.weight||''}</td></tr>`).join('')}</table>`:''}
     ${a.notes?`<p class="notes">${esc(a.notes)}</p>`:''}
     ${files.some(f=>f.kind==='photo')?`<div class="photos">${files.filter(f=>f.kind==='photo').map(f=>`<button type="button" data-photo="${f.id}">${f.thumb?`<img src="${f.thumb}" alt="${esc(f.name)}">`:icon('image')+esc(f.name)}</button>`).join('')}</div>`:''}
@@ -2212,7 +2211,7 @@ function periodReportHtml(){
   const now=totals(list), was=totals(before), quarter=prSpan==='quarter';
   const head=`<div class="rhead"><div><h1>${quarter?'Quarterly':'Monthly'} exercise report</h1><p><b>${r.cur.label}</b>${r.partial?`, to ${shortDay(r.end)} (not finished)`:''}</p><p class="muted">Prepared ${shortDay(todayStr())}. Compared with ${r.partial?`${shortDay(r.prev.from)} to ${shortDay(r.prevEnd)}`:r.prev.label}.</p></div></div>`;
   if(!list.length) return head+`<p class="muted">No exercise logged in this period.${before.length?` There ${before.length===1?'was 1 session':`were ${before.length} sessions`} in the period compared.`:''}</p>${prDaily(r)}${prTests(r)}`;
-  return head+prSummary(now,was,r)+(now.calories?marsHtml(now.calories,10):'')+prByType(list,before)+prChart(list,r,prSpan)+(quarter?prMonths(r):'')
+  return head+prSummary(now,was,r)+(now.calories?fatHtml(now.calories,10):'')+prByType(list,before)+prChart(list,r,prSpan)+(quarter?prMonths(r):'')
     +'<section id="prZones"><h2>Heart rate zones</h2><p class="muted">Working out zone times…</p></section>'
     +prBest(list)+prDaily(r)+prTests(r)+prSessions(list)
     +'<p class="muted">Totals use the figures saved with each exercise; a figure not recorded counts as zero in totals. Average heart rate is weighted by session time.</p>';
