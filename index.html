@@ -86,7 +86,7 @@ figure.zones,figure.power{margin:0 0 12px}.zones figcaption,.power figcaption{di
 .hbar{background:#eef0f2;border:1px solid #b9c0c7;border-bottom:0;border-radius:3px 3px 0 0;min-height:3px}.hbar:hover{background:#fff;border-color:#15212b}
 .plot .ftpline{stroke:var(--warn);stroke-width:1.5;stroke-dasharray:6 4;vector-effect:non-scaling-stroke}.ftpkey{color:var(--warn);font-weight:600}
 .p1{background:#9aa5b1}.p2{background:#4a86f0}.p3{background:#73bd60}.p4{background:#f6cd4a}.p5{background:#ea7040}.p6{background:#e84326}.p7{background:#8e4ec6}
-.power figcaption b{white-space:nowrap}.power figcaption span{text-align:right}.power .metrics{margin-bottom:8px}.power .stat small{display:block;font-size:11px;color:var(--muted)}.pbar{display:block;height:5px;border-radius:3px;margin-top:3px}
+.power figcaption b{white-space:nowrap}.power figcaption span{text-align:right}.power .metrics{margin-bottom:8px}.power .stat small{display:block;font-size:11px;color:var(--muted)}.pwbar{display:block;height:5px;border-radius:3px;margin-top:3px}
 .z1{background:#4a86f0}.z2{background:#73bd60}.z3{background:#f6cd4a}.z4{background:#ea7040}.z5{background:#e84326}
 .hrsum{margin:4px 0 8px;font-size:13px;color:var(--muted)}.hrsum b{color:var(--ink);font-size:15px;margin-right:10px}.heart{color:#e03a2a;font-size:16px}
 .ftpset,.ftpadd,.maxhr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.maxhr input,.ftpset input,.ftpadd input[type=number]{width:80px;margin:0 4px}.ftpadd input[type=date]{width:auto;margin:0 4px}.warnnote{color:var(--warn);margin:6px 0 0}
@@ -115,7 +115,7 @@ body.reporting{overflow:hidden}
 .pchart svg{display:block;width:100%;height:auto}.pchart .grid{stroke:var(--line)}.pchart text{font-size:11px;fill:var(--muted)}.pchart .hit{fill:transparent}
 .key{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}.pkeys{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px}.rpage .fat{margin-top:12px}.compare td.wraps{white-space:normal;min-width:110px}
 .prz{display:grid;grid-template-columns:minmax(0,14em) minmax(0,1fr) 9em;gap:8px;align-items:center;padding:3px 0;font-size:12.5px}.prz small{color:var(--muted)}.prbar{height:16px;border-left:1px solid var(--line)}.prbar i{display:block;height:100%;border-radius:0 4px 4px 0}
-@media (max-width:560px){.rpage{padding:12px}.rpage .compare th{white-space:normal}.rpage .compare th,.rpage .compare td{padding-left:4px;padding-right:4px}.rpage .compare th[scope=row]{min-width:84px}.prz{grid-template-columns:minmax(0,1fr) 9em}.prz .prbar{grid-column:1/-1;order:3}}
+@media (max-width:560px){#prRideList th:nth-child(2),#prRideList td:nth-child(2){display:none}#prRideList th,#prRideList td{font-size:11.5px}#prRideList th[scope=row]{min-width:0}.rpage{padding:12px}.rpage .compare th{white-space:normal}.rpage .compare th,.rpage .compare td{padding-left:4px;padding-right:4px}.rpage .compare th[scope=row]{min-width:84px}.prz{grid-template-columns:minmax(0,1fr) 9em}.prz .prbar{grid-column:1/-1;order:3}}
 #report{position:fixed;inset:0;z-index:5;overflow:auto;background:var(--bg);padding:0 10px 30px}
 .rbar{position:sticky;top:0;z-index:1;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px 0;background:var(--bg)}
 .rpage{max-width:900px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
@@ -188,7 +188,7 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-28 · exercise tool v1.15 · power against FTP';
+const VERSION='2026-11-28 · exercise tool v1.16 · power in reports';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
 const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',targets:'exercise-targets-v1',ftp:'exercise-ftp-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
@@ -1561,7 +1561,7 @@ function powerHtml(detail,a){
   const stat=(label,v,sub)=>`<div class="stat"><span>${label}</span><b>${v}</b><small>${sub}</small></div>`;
   return `<figure class="power">${head(`FTP ${f.ftp} W (${esc(f.note)})`)}
     <div class="metrics">${a.avgPower?stat('Average power',a.avgPower+' W',Math.round(a.avgPower/f.ftp*100)+'% of FTP'):''}${l?stat('Normalised Power',l.np+' W',l.vi?`${l.vi.toFixed(2)} × average`:'surge-weighted')+stat('Intensity Factor',l.iff.toFixed(2),'1.00 = at FTP')+(l.tss!==null?stat('Training Stress Score',l.tss,'1 hour at FTP = 100'):''):''}</div>
-    ${z.zones.map((x,i)=>`<div class="zrow"><i class="sw p${i+1}"></i><span class="zn"><b>${x.name}</b><small>${x.what} · ${x.range}</small><i class="pbar p${i+1}" style="width:${(x.share*100).toFixed(1)}%"></i></span><span class="zt">${hms(x.secs)||'0:00'}<small>${Math.round(x.share*100)}%</small></span></div>`).join('')}
+    ${z.zones.map((x,i)=>`<div class="zrow"><i class="sw p${i+1}"></i><span class="zn"><b>${x.name}</b><small>${x.what} · ${x.range}</small><i class="pwbar p${i+1}" style="width:${(x.share*100).toFixed(1)}%"></i></span><span class="zt">${hms(x.secs)||'0:00'}<small>${Math.round(x.share*100)}%</small></span></div>`).join('')}
     <p class="muted">Time with no pedalling counts in Zone 1.${l&&a.duration<1200?' Normalised Power and the scores mean little for rides under 20 minutes.':''}</p>
     ${f.assumed?'<p class="warnnote">No FTP is recorded for the date of this ride. Add one under Settings, FTP history.</p>':''}
     ${z.exact?'':`<p class="muted">Zone times are approximate, from the smoothed graph.${a.np?'':' Normalised Power and training load need the FIT file.'}</p>`}
@@ -2279,15 +2279,14 @@ function prByType(list,before){
   return `<section><h2>By activity</h2>${prTable(['Activity','Sessions','Time','Distance','Calories','Fat burnt','Avg HR','Change in time'],body)}</section>`;
 }
 /* minutes per day (month) or per week from Monday (quarter), stacked by activity */
-function prChart(list,r,span){
+function prChart(list,r,span,value=a=>(a.duration||0)/60,title=span==='month'?'Minutes per day':'Minutes per week',tip=m=>durText(m*60)){
   const bins=[];
   for(let d=r.cur.from;d<=r.cur.to;){
     const next=span==='month'?dayPlus(d,1):dayPlus(ymd(mondayOf(dateOf(d))),7);
     bins.push({from:d,to:dayPlus(next,-1),mins:{}}); d=next;
   }
-  for(const x of list){const a=x.data,b=bins.find(b=>a.date>=b.from&&a.date<=b.to);if(b&&a.duration)b.mins[a.type]=(b.mins[a.type]||0)+a.duration/60;}
+  for(const x of list){const a=x.data,b=bins.find(b=>a.date>=b.from&&a.date<=b.to),v=value(a);if(b&&v)b.mins[a.type]=(b.mins[a.type]||0)+v;}
   const sum=b=>Object.values(b.mins).reduce((p,q)=>p+q,0), peak=Math.max(0,...bins.map(sum));
-  const title=span==='month'?'Minutes per day':'Minutes per week';
   if(!peak) return '';
   const step=[15,30,60,120,240,480,960].find(s=>peak/s<=4)||1920, top=Math.ceil(peak/step)*step;
   const W=Math.max(320,Math.min(860,innerWidth-60)),H=200,L=40,B=20,T=8,cw=(W-L)/bins.length,bw=Math.max(3,Math.min(34,cw-3)),y=v=>T+(H-T-B)*(1-v/top);
@@ -2299,7 +2298,7 @@ function prChart(list,r,span){
     for(const type of Object.keys(TYPES)){const m=b.mins[type];if(!m)continue;const h=y(base)-y(base+m);s+=`<rect class="pbar" x="${x.toFixed(1)}" y="${y(base+m).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,h-(base?1.5:0)).toFixed(1)}" rx="1.5" style="fill:var(--c-${type})"/>`;base+=m;}
     const d=dateOf(b.from), lbl=span==='month'?String(d.getDate()):`${d.getDate()}/${d.getMonth()+1}`;
     if(i%every===0) s+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-5}" text-anchor="middle">${lbl}</text>`;
-    const parts=Object.entries(b.mins).map(([t,m])=>`${TYPES[t].label} ${durText(m*60)}`).join(', ');
+    const parts=Object.entries(b.mins).map(([t,m])=>`${TYPES[t].label} ${tip(m)}`).join(', ');
     s+=`<rect class="hit" x="${(L+i*cw).toFixed(1)}" y="0" width="${cw.toFixed(1)}" height="${H}" data-tip="${span==='month'?shortDay(b.from):'Week from '+shortDay(b.from)}: ${parts||'nothing logged'}"/>`;
   });
   const used=Object.keys(TYPES).filter(t=>bins.some(b=>b.mins[t]));
@@ -2314,11 +2313,45 @@ function prMonths(r){
   return `<section><h2>Month by month</h2>${prTable(['Month','Sessions','Active days','Time','Distance','Calories','Fat burnt'],body)}</section>`;
 }
 function prBest(list){
-  const best=[['Longest session','duration',durText],['Farthest','distance',km],['Most calories','calories',v=>`${num(v)} cal (${fatText(v)} fat)`],['Most elevation','ascent',v=>num(v)+' m'],['Highest average power','avgPower',v=>v+' W'],['Highest heart rate','maxHr',v=>v+' bpm']].map(([name,k,fmt])=>{
+  const best=[['Longest session','duration',durText],['Farthest','distance',km],['Most calories','calories',v=>`${num(v)} cal (${fatText(v)} fat)`],['Most elevation','ascent',v=>num(v)+' m'],['Highest average power','avgPower',v=>v+' W'],['Highest Normalised Power','np',v=>v+' W'],['Highest heart rate','maxHr',v=>v+' bpm']].map(([name,k,fmt])=>{
     const r=list.filter(x=>x.data[k]>0).sort((p,q)=>q.data[k]-p.data[k])[0];
     return r?`<tr><th scope="row">${name}</th><td><b>${fmt(r.data[k])}</b></td><td>${TYPES[r.data.type]?.label||''}${r.data.title?`: ${esc(r.data.title)}`:''}</td><td>${shortDay(r.data.date)}</td></tr>`:'';
   }).join('');
   return best?`<section><h2>Highlights</h2>${prTable(['','Figure','Session','Date'],best)}</section>`:'';
+}
+/* cycling power: each ride is judged against the FTP on its own date */
+const prRides=list=>list.filter(r=>r.data.type==='ride'&&(r.data.avgPower||r.data.np));
+const rideFigures=a=>{const f=ftpFor(a);return {f,l:f?rideLoad(a,f.ftp):null};};
+function powerTotals(list){
+  const rides=prRides(list), all=rides.map(r=>({a:r.data,...rideFigures(r.data)}));
+  const mean=(items,get)=>{const v=items.filter(x=>get(x)!=null&&x.a.duration),t=v.reduce((n,x)=>n+x.a.duration,0);return t?v.reduce((n,x)=>n+get(x)*x.a.duration,0)/t:null;};
+  const loaded=all.filter(x=>x.l&&x.l.tss!==null), avg=mean(all,x=>x.a.avgPower||null), np=mean(all,x=>x.a.np||null);
+  return {rides:rides.length,loaded:loaded.length,assumed:all.filter(x=>x.f&&x.f.assumed).length,noFtp:all.filter(x=>!x.f).length,
+    time:rides.reduce((n,r)=>n+(r.data.duration||0),0),avg:avg===null?null:Math.round(avg),np:np===null?null:Math.round(np),
+    iff:mean(loaded,x=>x.l.iff),tss:loaded.length?loaded.reduce((n,x)=>n+x.l.tss,0):null};
+}
+function prPower(list,before,r,span){
+  const now=powerTotals(list), was=powerTotals(before);
+  if(!now.rides) return '';
+  const whole=t=>t.rides&&t.loaded===t.rides, w=v=>v+' W', two=v=>v.toFixed(2);
+  /* load figures are only compared when every ride on both sides has them */
+  const line=(k,name,fmt,load)=>{
+    if(now[k]==null&&was[k]==null) return '';
+    const can=was.rides&&(!load||(whole(now)&&whole(was))), shown=k==='iff'?v=>v==null?v:Math.round(v*100)/100:v=>v;
+    return `<tr data-p="${k}"><th scope="row">${name}</th><td><b>${now[k]==null?'–':fmt(now[k])}</b></td><td>${!was.rides||was[k]==null?'–':fmt(was[k])}</td><td>${can?changeText(shown(now[k]),shown(was[k]),fmt):'–'}</td></tr>`;
+  };
+  const body=line('rides','Rides with power',num)+line('time','Riding time',durText)+line('tss','Training load (TSS)',num,true)+line('iff','Average Intensity Factor',two,true)+line('avg','Average power',w)+line('np','Average Normalised Power',w,true);
+  const gaps=(t,name)=>t.rides&&t.loaded<t.rides?`${t.loaded} of ${t.rides} rides ${name}`:'';
+  const missing=[gaps(now,'in this period'),gaps(was,'in the period compared')].filter(Boolean).join(' and ');
+  const notes=(now.noFtp?`<p class="warnnote">No FTP is set, so training load cannot be worked out. Add it under Settings.</p>`
+      :missing?`<p class="warnnote">Training load covers only ${missing}. Open the others and press Get exact figures from the FIT file; rides entered by hand have no load.</p>`:'')
+    +(now.assumed?`<p class="warnnote">${now.assumed} ride${now.assumed===1?' has':'s have'} no FTP recorded for the date. Add past figures under Settings, FTP history.</p>`:'');
+  const perRide=[...prRides(list)].sort((p,q)=>(p.data.date+(p.data.time||'')).localeCompare(q.data.date+(q.data.time||''))).map(x=>{const a=x.data,{f,l}=rideFigures(a);
+    return `<tr data-ride="${esc(x.id)}"><th scope="row">${shortDay(a.date)}</th><td class="wraps">${esc(a.title||'')}</td><td>${f?f.ftp+' W':'–'}</td><td>${a.avgPower?a.avgPower+' W':'–'}</td><td>${a.np?a.np+' W':'–'}</td><td>${l?l.iff.toFixed(2):'–'}</td><td>${l&&l.tss!==null?l.tss:'–'}</td></tr>`;}).join('');
+  const chart=prChart(prRides(list),r,span,a=>rideFigures(a).l?.tss||0,span==='month'?'Training load per day (TSS)':'Training load per week (TSS)',v=>'TSS '+Math.round(v));
+  return `<section id="prPower"><h2>Cycling power</h2>${prTable(['Measure',r.partial?'So far':'This period',r.partial?'Same days before':'Previous','Change'],body)}${notes}</section>`
+    +chart+'<section id="prPz" hidden></section>'
+    +`<section id="prRideList"><h2>Rides: power</h2>${prTable(['Date','Title','FTP','Avg power','NP','IF','TSS'],perRide)}</section>`;
 }
 /* daily health averages, counting only the days that have each figure */
 const PR_DAILY=[['sleepH','Sleep per night',v=>durText(v*3600)],['sleepScore','Sleep score',v=>String(Math.round(v))],['rhr','Resting heart rate',v=>Math.round(v)+' bpm'],['hrv','HRV',v=>Math.round(v)+' ms'],['stress','Stress',v=>String(Math.round(v))],['bbHigh','Body Battery high',v=>String(Math.round(v))],['steps','Steps per day',num],['weight','Weight',v=>(Math.round(v*10)/10)+' kg']];
@@ -2354,9 +2387,11 @@ function periodReportHtml(){
   const head=`<div class="rhead"><div><h1>${quarter?'Quarterly':'Monthly'} exercise report</h1><p><b>${r.cur.label}</b>${r.partial?`, to ${shortDay(r.end)} (not finished)`:''}</p><p class="muted">Prepared ${shortDay(todayStr())}. Compared with ${r.partial?`${shortDay(r.prev.from)} to ${shortDay(r.prevEnd)}`:r.prev.label}.</p></div></div>`;
   if(!list.length) return head+`<p class="muted">No exercise logged in this period.${before.length?` There ${before.length===1?'was 1 session':`were ${before.length} sessions`} in the period compared.`:''}</p>${prDaily(r)}${prTests(r)}`;
   return head+prSummary(now,was,r)+(now.calories?fatHtml(now.calories,10):'')+prByType(list,before)+prChart(list,r,prSpan)+(quarter?prMonths(r):'')
+    +prPower(list,before,r,prSpan)
     +'<section id="prZones"><h2>Heart rate zones</h2><p class="muted">Working out zone times…</p></section>'
     +prBest(list)+prDaily(r)+prTests(r)+prSessions(list)
-    +'<p class="muted">Totals use the figures saved with each exercise; a figure not recorded counts as zero in totals. Average heart rate is weighted by session time. Fat burnt is an energy equivalent (calories ÷ 7,700), not measured fat loss.</p>';
+    +'<p class="muted">Totals use the figures saved with each exercise; a figure not recorded counts as zero in totals. Average heart rate is weighted by session time. Fat burnt is an energy equivalent (calories ÷ 7,700), not measured fat loss.'
+    +(prRides(list).length?' Training Stress Score (TSS) is hours × Intensity Factor² × 100, where Intensity Factor is Normalised Power ÷ FTP; averages are weighted by ride time.':'')+'</p>';
 }
 /* zone times need each session's heart rate detail, which the list does not load */
 async function prZones(){
@@ -2370,6 +2405,7 @@ async function prZones(){
       data.forEach(d=>detail[d.id]=d.detail); if(data.length<100) break;
     }
     const box=$('#prZones'); if(run!==prRun||!box) return;
+    prPowerZones(list,detail);
     const secs=ZONES.map(()=>0); let used=0, rough=0, assumed=false;
     for(const x of list){
       const m=maxHrInfo(x.data), z=detail[x.id]&&zoneTimes(detail[x.id],m.max); if(!z) continue;
@@ -2380,7 +2416,20 @@ async function prZones(){
     const all=secs.reduce((p,q)=>p+q,0)||1, top=Math.max(...secs)||1;
     box.innerHTML=`<h2>Heart rate zones</h2>${ZONES.map(([name,what],i)=>`<div class="prz" data-z="${i+1}"><span><b>${name}</b> <small>${what}</small></span><span class="prbar"><i class="z${i+1}" style="width:${(secs[i]/top*100).toFixed(1)}%"></i></span><span class="zt">${durText(secs[i])} · ${Math.round(secs[i]/all*100)}%</span></div>`).join('')}
       <p class="muted">From ${used} of ${list.length} session${list.length===1?'':'s'} with heart rate detail, each judged against your maximum for that date.${rough?` ${rough} older import${rough===1?' is':'s are'} approximate.`:''}${assumed?' Your maximum is assumed: set it in Settings.':''}</p>`;
-  }catch(e){const box=$('#prZones');if(run===prRun&&box)box.innerHTML=`<h2>Heart rate zones</h2><p class="warnnote">Zone times could not be loaded: ${esc(e.message)}</p>`;}
+  }catch(e){if(run===prRun&&$('#prPz'))$('#prPz').remove();const box=$('#prZones');if(run===prRun&&box)box.innerHTML=`<h2>Heart rate zones</h2><p class="warnnote">Zone times could not be loaded: ${esc(e.message)}</p>`;}
+}
+function prPowerZones(list,detail){
+  const box=$('#prPz'); if(!box) return;
+  const rides=prRides(list), secs=PZONES.map(()=>0); let used=0, rough=0;
+  for(const x of rides){
+    const f=ftpFor(x.data), z=f&&detail[x.id]&&powerZones(detail[x.id],f.ftp); if(!z) continue;
+    used++; if(!z.exact) rough++; z.zones.forEach((v,i)=>secs[i]+=v.secs);
+  }
+  if(!used){box.remove();return;}
+  const all=secs.reduce((p,q)=>p+q,0)||1, top=Math.max(...secs)||1;
+  box.innerHTML=`<h2>Power zones</h2>${PZONES.map(([name,what],i)=>`<div class="prz" data-pz="${i+1}"><span><b>${name}</b> <small>${what}</small></span><span class="prbar"><i class="p${i+1}" style="width:${(secs[i]/top*100).toFixed(1)}%"></i></span><span class="zt">${durText(secs[i])} · ${Math.round(secs[i]/all*100)}%</span></div>`).join('')}
+    <p class="muted">From ${used} of ${rides.length} ride${rides.length===1?'':'s'} with power detail, each judged against the FTP for its date.${rough?` ${rough} older import${rough===1?' is':'s are'} approximate.`:''}</p>`;
+  box.hidden=false;
 }
 function openPeriodReport(span,start){
   prSpan=span; prStart=periodOf(span,start||todayStr()).from;
