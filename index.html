@@ -78,15 +78,18 @@ table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:5px 6px;
 .fatblk{position:relative;display:block;width:30px;height:22px}.fatblk svg{display:block;width:30px;height:22px}.fatblk>svg{opacity:.22}.fatblk>span{position:absolute;inset:0}.blocks .more{font-size:13px}#fatTotal:not(:empty){margin-top:10px}
 .line{margin:0 0 10px}.line figcaption{display:flex;justify-content:space-between;font-size:12.5px}.plot{position:relative;border-bottom:1px solid var(--line);touch-action:pan-y}.plot svg{display:block;width:100%;height:100px}
 .plot path{fill:none;stroke:var(--data);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}.cross{position:absolute;top:0;bottom:0;width:1px;background:var(--muted);pointer-events:none}
-figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:4px}
+figure.zones,figure.power{margin:0 0 12px}.zones figcaption,.power figcaption{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:4px}
 .zrow{display:grid;grid-template-columns:14px minmax(0,1fr) 4.5em;gap:8px;align-items:center;padding:2px 0}.zrow b{font-size:12.5px}.zrow small{display:block;font-size:11px;color:var(--muted)}
 .zt{text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px}.sw{width:14px;height:14px;border-radius:4px}
 .hrdist{position:relative;height:210px;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:3px}.hrdist i{position:absolute;bottom:0;font-style:normal}
 .band{height:72%}.band b{display:block;text-align:center;margin-top:8px;font-size:12px;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.55)}
 .hbar{background:#eef0f2;border:1px solid #b9c0c7;border-bottom:0;border-radius:3px 3px 0 0;min-height:3px}.hbar:hover{background:#fff;border-color:#15212b}
+.plot .ftpline{stroke:var(--warn);stroke-width:1.5;stroke-dasharray:6 4;vector-effect:non-scaling-stroke}.ftpkey{color:var(--warn);font-weight:600}
+.p1{background:#9aa5b1}.p2{background:#4a86f0}.p3{background:#73bd60}.p4{background:#f6cd4a}.p5{background:#ea7040}.p6{background:#e84326}.p7{background:#8e4ec6}
+.power figcaption b{white-space:nowrap}.power figcaption span{text-align:right}.power .metrics{margin-bottom:8px}.power .stat small{display:block;font-size:11px;color:var(--muted)}.pbar{display:block;height:5px;border-radius:3px;margin-top:3px}
 .z1{background:#4a86f0}.z2{background:#73bd60}.z3{background:#f6cd4a}.z4{background:#ea7040}.z5{background:#e84326}
 .hrsum{margin:4px 0 8px;font-size:13px;color:var(--muted)}.hrsum b{color:var(--ink);font-size:15px;margin-right:10px}.heart{color:#e03a2a;font-size:16px}
-.maxhr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.maxhr input{width:80px;margin:0 4px}.warnnote{color:var(--warn);margin:6px 0 0}
+.ftpset,.ftpadd,.maxhr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.maxhr input,.ftpset input,.ftpadd input[type=number]{width:80px;margin:0 4px}.ftpadd input[type=date]{width:auto;margin:0 4px}.warnnote{color:var(--warn);margin:6px 0 0}
 .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
 .ai{display:flex;flex-direction:column;gap:8px}.aitext{border:1px solid var(--line);border-radius:10px;padding:4px 14px 10px;background:var(--bg)}.aitext h4{margin:10px 0 4px;font-size:14px}.aitext ul,.aitext ol{margin:4px 0;padding-left:20px}.aitext p{margin:6px 0}
 #keybox,#pastebox{display:flex;flex-direction:column;gap:6px;align-items:flex-start}#keybox .f,#pastebox .f{align-self:stretch}.busy{color:var(--muted)}
@@ -185,9 +188,9 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-28 · exercise tool v1.14 · daily targets and colour codes';
+const VERSION='2026-11-28 · exercise tool v1.15 · power against FTP';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
-const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',targets:'exercise-targets-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
+const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',targets:'exercise-targets-v1',ftp:'exercise-ftp-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
 const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}};
 const lsSet=(k,v)=>{try{v===null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
@@ -564,9 +567,10 @@ function readEditor(){
 }
 const filePath=(a,f,folder)=>`${ONEDRIVE_FOLDER}/${folder}/${a.date} ${f.id} ${f.name.replace(/[\\/:*?"<>|#%]+/g,'-').slice(-80)}`;
 function applyFit(parsed,file){
-  const p=parsed.activity, a=ed.a;
+  const p=parsed.activity, a=ed.a, same=near(a.fitStart,p.fitStart);
+  delete a.np; delete a.fitFtp;
   for(const [k,val] of Object.entries(p)){ if(k==='type'&&!val) continue; if(val!==null&&val!==undefined) a[k]=val; }
-  ed.detail=parsed.detail; delete a.ai;
+  ed.detail=parsed.detail; if(!same) delete a.ai;
   for(const f of (a.files||[]).filter(f=>f.kind==='fit')) removeFile(f.id);
   const meta={id:uid(),kind:'fit',name:file.name,size:file.blob.size,uploaded:false};
   (a.files=a.files||[]).push(meta); ed.pending.set(meta.id,file.blob); ed.dirty=true;
@@ -818,7 +822,7 @@ async function enterApp(u){
   user=u; $('#gate').hidden=true; $('#main').hidden=false;
   const c=lsGet(LS.cache); if(c&&c.user===u.id){rows=c.rows;sortRows();}
   render();
-  if(sb.auth.getUser) sb.auth.getUser().then(({data})=>{if(data&&data.user&&user&&data.user.id===user.id){user=data.user;lsSet(LS.maxHr,data.user.user_metadata?.maxHr||null);lsSet(LS.profile,data.user.user_metadata?.profile||null);lsSet(LS.targets,data.user.user_metadata?.targets||null);redrawGraphs();renderGarmin();}}).catch(()=>{});   // picks up zones changed on another device
+  if(sb.auth.getUser) sb.auth.getUser().then(({data})=>{if(data&&data.user&&user&&data.user.id===user.id){user=data.user;lsSet(LS.maxHr,data.user.user_metadata?.maxHr||null);lsSet(LS.profile,data.user.user_metadata?.profile||null);lsSet(LS.targets,data.user.user_metadata?.targets||null);lsSet(LS.ftp,data.user.user_metadata?.ftpHistory||null);redrawGraphs();renderGarmin();}}).catch(()=>{});   // picks up zones changed on another device
   const healthReady=loadHealth().catch(e=>console.error(e));
   loadGarmin().catch(e=>console.error(e));
   if(await loadRows()){
@@ -836,7 +840,7 @@ async function initDb(){
   if(!window.supabase){showGate('signin','The database library did not load. Check the connection and reload the page.');return;}
   try{sb=window.supabase.createClient(c.url,c.key,{auth:{storageKey:LS.auth,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});}
   catch(e){lsSet(LS.sb,null);showGate('connect',e.message);return;}
-  sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'&&user){user=null;rows=[];loaded=false;health=[];healthState='loading';healthQueue=[];healthBusy='';gDays=[];gState='loading';gResult=null;gBusy='';lsSet(GLS.synced,null);lsSet(GLS.pending,null);lsSet(LS.cache,null);lsSet(LS.targets,null);lsSet(LS.profile,null);lsSet(LS.maxHr,null);$$('dialog[open]').forEach(d=>d.close());showGate('signin');}});
+  sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'&&user){user=null;rows=[];loaded=false;health=[];healthState='loading';healthQueue=[];healthBusy='';gDays=[];gState='loading';gResult=null;gBusy='';lsSet(GLS.synced,null);lsSet(GLS.pending,null);lsSet(LS.cache,null);lsSet(LS.targets,null);lsSet(LS.ftp,null);lsSet(LS.profile,null);lsSet(LS.maxHr,null);$$('dialog[open]').forEach(d=>d.close());showGate('signin');}});
   const {data}=await sb.auth.getSession();
   if(data.session) await enterApp(data.session.user); else showGate('signin');
 }
@@ -869,6 +873,10 @@ document.addEventListener('click',async e=>{
   if(d.etype){readEditor();ed.a.type=d.etype;return drawEditor();}
   if(d.delset!==undefined){readEditor();ed.a.sets.splice(+d.delset,1);return drawEditor();}
   if(d.savemax!==undefined) return saveMaxHr(t);
+  if(d.saveftp!==undefined) return saveFtp(t);
+  if(d.addftp!==undefined) return addFtp();
+  if(d.delftp!==undefined) return editFtpHistory(ftpHistory().filter(x=>x.from!==d.delftp));
+  if(d.refit!==undefined) return refit(t);
   if(t.id==='saveProfile') return saveProfile();
   if(t.id==='pasteAi') return showPaste(true);
   if(t.id==='cancelPaste') return showPaste(false);
@@ -907,7 +915,7 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('input',e=>{if(e.target.closest('#editForm')&&!e.target.closest('.maxhr'))ed.dirty=true;});
 document.addEventListener('input',e=>{if(e.target.closest('#profile'))showCalc();});
-document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const m=e.target.closest&&e.target.closest('.maxhr');if(m){e.preventDefault();saveMaxHr($('[data-savemax]',m));}});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const m=e.target.closest&&e.target.closest('.maxhr,.ftpset,.ftpadd');if(m){e.preventDefault();$('button',m).click();}});
 $('#editDlg').addEventListener('cancel',e=>{e.preventDefault();closeEditor();});
 $('#fileIn').addEventListener('change',e=>{const f=[...e.target.files];e.target.value='';handleFiles(f);});
 $('#backupIn').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';if(f)importBackup(f);});
@@ -1060,6 +1068,17 @@ function parseFit(buf){
     recs.forEach((r,i)=>{if(!r[3])return;const nx=recs[i+1];let dt=nx?nx[253]-r[253]:1;if(!(dt>=0&&dt<=30))dt=1;hrSecs[r[3]]=(hrSecs[r[3]]||0)+dt;});
     const detail={series:recs.length>1?bucketSeries(recs,start):null,route:route.length>1?route:null};
     if(Object.keys(hrSecs).length) detail.hrSecs=hrSecs;
+    /* power: seconds at each wattage, and Normalised Power (30 s rolling average, fourth power) */
+    const pwSecs={}, watts=[];
+    recs.forEach((r,i)=>{if(r[7]===undefined)return;const nx=recs[i+1];let dt=nx?nx[253]-r[253]:1;if(!(dt>=0&&dt<=30))dt=1;if(!dt)return;pwSecs[r[7]]=(pwSecs[r[7]]||0)+dt;for(let j=0;j<dt;j++)watts.push(r[7]);});
+    if(watts.some(w=>w>0)){
+      detail.pwSecs=pwSecs;
+      let sum=0,quad=0,n=0;
+      watts.forEach((w,i)=>{sum+=w;if(i>=30)sum-=watts[i-30];if(i>=29){quad+=(sum/30)**4;n++;}});
+      const np=s[34]||(n?Math.round((quad/n)**0.25):0);
+      if(np) a.np=np;
+      if(s[45]) a.fitFtp=s[45];
+    }
     return {activity:a,detail:(detail.series||detail.route)?detail:null};
   });
 }
@@ -1154,10 +1173,11 @@ function openBigMap(key){
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-bigmap]');if(t)openBigMap(t.dataset.bigmap);});
 /* ---------- graphs and heart rate zones ---------- */
 const SERIES=[['pw','Power','W',1,'avgPower','maxPower'],['cad','Cadence','rpm',1,'avgCadence','maxCadence'],['hr','Heart rate','bpm',1,'avgHr','maxHr'],['sp','Speed','km/h',3.6,null,'maxSpeed'],['al','Elevation','m',1]];
-function lineChart(s,a,[k,label,unit,mul,avgKey,maxKey]){
+function lineChart(s,a,[k,label,unit,mul,avgKey,maxKey],mark){
   if(!s[k]) return '';
   const v=s[k].map(x=>x===null?null:x*mul), real=v.filter(x=>x!==null); if(real.length<2) return '';
-  let lo=Math.min(...real),hi=Math.max(...real); if(hi-lo<10){hi+=5;lo-=5;}
+  let lo=Math.min(...real),hi=Math.max(...real); if(mark){lo=Math.min(lo,mark);hi=Math.max(hi,Math.ceil(mark*1.05));}
+  if(hi-lo<10){hi+=5;lo-=5;}
   const T=s.t[s.t.length-1]||1; let d='',pen=false;
   v.forEach((y,i)=>{if(y===null){pen=false;return;}d+=(pen?'L':'M')+(s.t[i]/T*600).toFixed(1)+' '+(96-(y-lo)/(hi-lo)*90).toFixed(1);pen=true;});
   /* the headline figures come from the whole file: the line is smoothed, so its peaks are lower */
@@ -1165,8 +1185,8 @@ function lineChart(s,a,[k,label,unit,mul,avgKey,maxKey]){
   let max=maxKey&&a[maxKey]; if(k==='sp'&&max) max=Math.round(max*36)/10;
   const head=[avg&&`avg ${avg}`,max&&`max ${max}`].filter(Boolean).join(' · ');
   return `<figure class="line" data-k="${k}" data-mul="${mul}" data-unit="${unit}"><figcaption><b>${label} (${unit})</b><span class="muted">${head}</span></figcaption>
-    <div class="plot"><svg viewBox="0 0 600 100" preserveAspectRatio="none" role="img" aria-label="${label} over time"><path d="${d}"/></svg><i class="cross" hidden></i></div>
-    <div class="axis"><span>0:00</span><span>line from ${Math.round(lo)} to ${Math.round(hi)} ${unit}</span><span>${hms(T)}</span></div></figure>`;
+    <div class="plot"><svg viewBox="0 0 600 100" preserveAspectRatio="none" role="img" aria-label="${label} over time${mark?`, with a line at your FTP of ${mark} ${unit}`:''}">${mark?`<line class="ftpline" x1="0" x2="600" y1="${(96-(mark-lo)/(hi-lo)*90).toFixed(1)}" y2="${(96-(mark-lo)/(hi-lo)*90).toFixed(1)}"/>`:''}<path d="${d}"/></svg><i class="cross" hidden></i></div>
+    <div class="axis"><span>0:00</span><span>${mark?`<b class="ftpkey">- - FTP ${mark} W</b> · `:''}line from ${Math.round(lo)} to ${Math.round(hi)} ${unit}</span><span>${hms(T)}</span></div></figure>`;
 }
 const ZONES=[['Zone 1','Warm up / recovery',0],['Zone 2','Easy endurance',60],['Zone 3','Aerobic / tempo',70],['Zone 4','Threshold',80],['Zone 5','Maximum',90]];
 /* profile and max heart rate are kept with the Supabase user so every device gets the same figures */
@@ -1234,7 +1254,9 @@ function zonesHtml(detail,a){
 function graphsHtml(detail,a){
   if(!detail) return '';
   const s=detail.series; let h='';
-  if(s) for(const def of SERIES){h+=lineChart(s,a,def); if(def[0]==='hr') h+=zonesHtml(detail,a);}
+  const f=a.type==='ride'?ftpFor(a):null;
+  if(s) for(const def of SERIES){const pw=def[0]==='pw';h+=lineChart(s,a,def,pw&&f?f.ftp:0); if(pw) h+=powerHtml(detail,a); if(def[0]==='hr') h+=zonesHtml(detail,a);}
+  if(!s||!s.pw) h=powerHtml(detail,a)+h;
   return h;
 }
 async function saveMaxHr(btn){
@@ -1264,7 +1286,7 @@ function profileHtml(){
     <label class="f"><span>Max heart rate formula</span><select id="p_formula">${Object.entries(HR_FORMULAS).map(([k,[l]])=>`<option value="${k}" ${formulaOf(p)===k?'selected':''}>${l}</option>`).join('')}</select></label>
     ${num('max','Measured max heart rate (optional)',set||'',100,230)}
     <p class="wide" id="p_calc" aria-live="polite"></p>
-  </div><button type="button" class="btn" id="saveProfile">Save profile</button>`;
+  </div><button type="button" class="btn" id="saveProfile">Save profile</button>${ftpHistHtml()}`;
 }
 function showCalc(){
   const out=$('#p_calc'); if(!out) return;
@@ -1283,10 +1305,13 @@ async function saveProfile(){
   }
   p.formula=$('#p_formula').value;
   const maxHr=Math.round(+$('#p_max').value)||null;
-  lsSet(LS.profile,p); lsSet(LS.maxHr,maxHr);
-  user.user_metadata={...(user.user_metadata||{}),profile:p,maxHr};
-  try{const {error}=await sb.auth.updateUser({data:{profile:p,maxHr}});if(error)throw error;toast('Profile saved.');}
+  const hist=ftpChanged(p.ftp); if(hist.length) p.ftp=hist[hist.length-1].ftp;
+  lsSet(LS.ftp,hist); lsSet(LS.profile,p); lsSet(LS.maxHr,maxHr);
+  user.user_metadata={...(user.user_metadata||{}),profile:p,maxHr,ftpHistory:hist};
+  try{const {error}=await sb.auth.updateUser({data:{profile:p,maxHr,ftpHistory:hist}});if(error)throw error;toast('Profile saved.');}
   catch(e){toast('Profile saved on this device only.');}
+  const box=$('#ftpHist'); if(box) box.innerHTML=ftpHistRows();
+  const cur=$('#p_ftp'); if(cur) cur.value=p.ftp??'';
   redrawGraphs();
 }
 
@@ -1304,10 +1329,13 @@ function aiPrompt(r,detail){
   add('Strength sets',setsText(a.sets));add('My notes',a.notes);
   let t=`SESSION\n${lines.join('\n')}\n`;
   const p=getProfile(), age=ageOn(p.dob,a.date), about=[], missing=[];
-  for(const [label,v] of [['Age at this session',age],['Gender',GENDERS[p.gender]],['Height (cm)',p.height],['Weight now (kg)',p.weight],['Resting heart rate (bpm)',p.restHr],['Cycling FTP now (W)',p.ftp]]) if(v!==null&&v!==undefined) about.push(`${label}: ${v}`); else missing.push(label.replace(/ (at|now|\().*/,'').toLowerCase());
+  for(const [label,v] of [['Age at this session',age],['Gender',GENDERS[p.gender]],['Height (cm)',p.height],['Weight now (kg)',p.weight],['Resting heart rate (bpm)',p.restHr],['Cycling FTP at this session (W)',ftpFor(a)?.ftp]]) if(v!==null&&v!==undefined) about.push(`${label}: ${v}`); else missing.push(label.replace(/ (at|now|\().*/,'').toLowerCase());
   if(about.length) t+=`\nABOUT ME\n${about.join('\n')}\n`;
   const z=detail&&zoneTimes(detail,m.max);
   if(z) t+=`\nHEART RATE ZONES (percent of a ${m.max} bpm maximum${m.assumed?', which is only an ASSUMED figure because I have not entered mine':m.source==='age'?`, which is only an ESTIMATE from my age`:', which I entered'}${z.exact?'':'; times approximate'})\n`+z.zones.map(x=>`${x.name} (${x.what}, ${x.range} bpm): ${hms(x.secs)||'0:00'} = ${Math.round(x.share*100)}%`).join('\n')+'\n';
+  const f=a.type==='ride'?ftpFor(a):null, pz=f&&detail&&powerZones(detail,f.ftp), load=f&&rideLoad(a,f.ftp);
+  if(load) t+=`\nPOWER LOAD (against an FTP of ${f.ftp} W)\nNormalised Power: ${load.np} W\nIntensity Factor: ${load.iff.toFixed(2)}${load.tss!==null?`\nTraining Stress Score: ${load.tss}`:''}\n`;
+  if(pz) t+=`\nPOWER ZONES (percent of that FTP${pz.exact?'':'; times approximate'})\n`+pz.zones.map(x=>`${x.name} (${x.what}, ${x.range}): ${hms(x.secs)||'0:00'} = ${Math.round(x.share*100)}%`).join('\n')+'\n';
   const s=detail&&detail.series;
   if(s&&s.t.length>1){
     const cols=SERIES.filter(([k])=>s[k]), n=Math.min(60,s.t.length), table=[];
@@ -1484,6 +1512,115 @@ async function sendToCalendar(id){
     say(`Sent. It shows on <b>${esc(fmtDate(r.data.date))}</b> as an Exercise event. <a href="${CALENDAR_URL}" target="_blank" rel="noopener">Open Home Calendar</a>, sign in if asked, and go to that date.`);
   }catch(e){console.warn(e);say('Not sent: '+esc(e.message),true);}
   if(btn) btn.disabled=false;
+}
+/* ---------- power against FTP (rides) ---------- */
+const PZONES=[['Zone 1','Active recovery',55],['Zone 2','Endurance',75],['Zone 3','Tempo',90],['Zone 4','Threshold',105],['Zone 5','VO2 max',120],['Zone 6','Anaerobic',150],['Zone 7','Neuromuscular',Infinity]];   // third item: upper limit, % of FTP
+/* FTP history, oldest first. from '' = "earlier", the figure held before history was kept */
+function ftpHistory(){
+  const h=(user&&user.user_metadata&&user.user_metadata.ftpHistory)||lsGet(LS.ftp)||[];
+  return (Array.isArray(h)?h:[]).filter(x=>x&&+x.ftp>=50&&+x.ftp<=600&&(x.from===''||isDay(x.from))).sort((a,b)=>a.from.localeCompare(b.from));
+}
+/* the FTP that applied on the day of the ride, so a new test does not re-rate old rides */
+function ftpFor(a){
+  const h=ftpHistory(), dated=h.filter(x=>x.from&&x.from<=a.date).pop(), earlier=h.find(x=>!x.from);
+  if(dated) return {ftp:+dated.ftp,note:`your FTP from ${fmtDate(dated.from)}`};
+  if(a.fitFtp>=50&&a.fitFtp<=600) return {ftp:+a.fitFtp,note:'the FTP recorded in the ride file'};
+  if(earlier) return {ftp:+earlier.ftp,note:'your earlier FTP'};
+  const f=h[0]?+h[0].ftp:+getProfile().ftp;
+  return f?{ftp:f,assumed:true,note:h[0]?`your first recorded FTP (from ${fmtDate(h[0].from)})`:'your profile FTP'}:null;
+}
+function powerBins(detail){
+  if(detail.pwSecs) return {exact:true,secs:detail.pwSecs};
+  const s=detail.series, secs={};
+  if(!s||!s.pw) return null;
+  s.pw.forEach((w,i)=>{if(w===null)return;const k=Math.round(w);secs[k]=(secs[k]||0)+(i+1<s.t.length?s.t[i+1]-s.t[i]:(i?s.t[i]-s.t[i-1]:1));});
+  return {exact:false,secs};
+}
+function powerZones(detail,ftp){
+  const b=powerBins(detail); if(!b) return null;
+  const top=PZONES.map(z=>z[2]===Infinity?Infinity:Math.floor(ftp*z[2]/100+1e-9)), secs=PZONES.map(()=>0);
+  for(const [w,t] of Object.entries(b.secs)) secs[top.findIndex(x=>+w<=x)]+=t;
+  const total=secs.reduce((x,y)=>x+y,0); if(!total) return null;
+  return {exact:b.exact,total,zones:PZONES.map(([name,what],i)=>({name,what,secs:secs[i],share:secs[i]/total,
+    range:i===0?`up to ${top[0]} W`:top[i]===Infinity?`${top[i-1]+1} W and over`:`${top[i-1]+1}–${top[i]} W`}))};
+}
+function rideLoad(a,ftp){
+  if(!a.np) return null;
+  const iff=a.np/ftp;
+  return {np:a.np,iff,tss:a.duration?Math.round(a.duration/3600*iff*iff*100):null,vi:a.avgPower?a.np/a.avgPower:null};
+}
+const ftpEntry=`<div class="ftpset"><label>Your FTP <input type="number" inputmode="numeric" min="50" max="600" aria-label="Functional threshold power in watts"> W</label><button type="button" class="btn" data-saveftp>Apply</button></div>`;
+function powerHtml(detail,a){
+  if(a.type!=='ride'||!powerBins(detail)) return '';
+  const f=ftpFor(a), canRead=!detail.pwSecs&&$('#viewDlg').open&&(a.files||[]).some(x=>x.kind==='fit');
+  const reread=canRead?'<button type="button" class="btn" data-refit>Get exact figures from the FIT file</button>':'';
+  const head=note=>`<figcaption><b>Power against FTP</b><span class="muted">${note}</span></figcaption>`;
+  if(!f) return `<figure class="power">${head('no FTP set')}<p class="muted">Enter your FTP (the highest power you can hold for about an hour) to see power zones and training load.</p>${ftpEntry}</figure>`;
+  const z=powerZones(detail,f.ftp); if(!z) return '';
+  const l=rideLoad(a,f.ftp);
+  const stat=(label,v,sub)=>`<div class="stat"><span>${label}</span><b>${v}</b><small>${sub}</small></div>`;
+  return `<figure class="power">${head(`FTP ${f.ftp} W (${esc(f.note)})`)}
+    <div class="metrics">${a.avgPower?stat('Average power',a.avgPower+' W',Math.round(a.avgPower/f.ftp*100)+'% of FTP'):''}${l?stat('Normalised Power',l.np+' W',l.vi?`${l.vi.toFixed(2)} × average`:'surge-weighted')+stat('Intensity Factor',l.iff.toFixed(2),'1.00 = at FTP')+(l.tss!==null?stat('Training Stress Score',l.tss,'1 hour at FTP = 100'):''):''}</div>
+    ${z.zones.map((x,i)=>`<div class="zrow"><i class="sw p${i+1}"></i><span class="zn"><b>${x.name}</b><small>${x.what} · ${x.range}</small><i class="pbar p${i+1}" style="width:${(x.share*100).toFixed(1)}%"></i></span><span class="zt">${hms(x.secs)||'0:00'}<small>${Math.round(x.share*100)}%</small></span></div>`).join('')}
+    <p class="muted">Time with no pedalling counts in Zone 1.${l&&a.duration<1200?' Normalised Power and the scores mean little for rides under 20 minutes.':''}</p>
+    ${f.assumed?'<p class="warnnote">No FTP is recorded for the date of this ride. Add one under Settings, FTP history.</p>':''}
+    ${z.exact?'':`<p class="muted">Zone times are approximate, from the smoothed graph.${a.np?'':' Normalised Power and training load need the FIT file.'}</p>`}
+    ${!z.exact||!a.np?reread:''}</figure>`;
+}
+/* re-reads the stored FIT file for rides imported before power detail was kept: the AI review stays */
+async function refit(btn){
+  const id=$('#viewDlg').dataset.id, r=rowById(id), f=r&&(r.data.files||[]).find(x=>x.kind==='fit'); if(!f) return;
+  btn.disabled=true;
+  try{
+    const buf=await (await fileBlob(f)).arrayBuffer(), all=parseFit(buf);
+    const hit=all.find(x=>near(x.activity.fitStart,r.data.fitStart))||(all.length===1&&!r.data.fitStart?all[0]:null);
+    if(!hit||!hit.detail) throw new Error('The FIT file does not match this ride.');
+    if(!hit.detail.pwSecs) throw new Error('That FIT file holds no power readings.');
+    const a={...r.data}; for(const k of ['np','fitFtp']) if(hit.activity[k]) a[k]=hit.activity[k];
+    await updateRow(id,r.rev,a,hit.detail); afterChange();
+    if($('#viewDlg').open&&$('#viewDlg').dataset.id===id){viewDetail=hit.detail;redrawGraphs();}
+    toast('Power figures updated.');
+  }catch(e){btn.disabled=false;if(e.conflict) await loadRows();toast(e.message);}
+}
+/* keep the profile's current FTP in step with the newest history entry */
+async function storeFtp(hist,profile){
+  hist=[...hist].sort((a,b)=>a.from.localeCompare(b.from));
+  const p={...(profile||getProfile())}; if(hist.length) p.ftp=hist[hist.length-1].ftp; else delete p.ftp;
+  lsSet(LS.ftp,hist); lsSet(LS.profile,p);
+  user.user_metadata={...(user.user_metadata||{}),ftpHistory:hist,profile:p};
+  try{const {error}=await sb.auth.updateUser({data:{ftpHistory:hist,profile:p}});if(error)throw error;return true;}
+  catch(e){return false;}
+}
+/* history after the profile FTP is changed: the new figure starts today, the old one is kept for older rides */
+function ftpChanged(ftp){
+  const h=ftpHistory(), old=h.length?+h[h.length-1].ftp:+getProfile().ftp;
+  if(!ftp||ftp===old) return h;
+  if(!h.length&&old) h.push({from:'',ftp:old});
+  return [...h.filter(x=>x.from!==todayStr()),{from:todayStr(),ftp}];
+}
+async function saveFtp(btn){
+  const v=Math.round(+$('input',btn.closest('.ftpset')).value||0);
+  if(v<50||v>600){toast('Enter an FTP between 50 and 600 watts.');return;}
+  const saved=await storeFtp(ftpHistory().length?ftpChanged(v):[{from:'',ftp:v}]);
+  toast(saved?'FTP saved.':'FTP saved on this device only.'); redrawGraphs();
+}
+function ftpHistRows(){
+  const h=ftpHistory();
+  return `${h.length?`<table><tr><th>Applies from</th><th>FTP</th><th></th></tr>${[...h].reverse().map(x=>`<tr><td>${x.from?esc(fmtDate(x.from)):'Earlier'}</td><td>${+x.ftp} W</td><td><button type="button" class="x" data-delftp="${x.from}" aria-label="Remove FTP ${x.from||'earlier'}">×</button></td></tr>`).join('')}</table>`:'<p class="muted">No history yet.</p>'}
+    <div class="ftpadd"><label>From <input type="date" max="${todayStr()}" aria-label="Date the FTP applies from"></label><label>FTP <input type="number" inputmode="numeric" min="50" max="600" aria-label="FTP in watts"> W</label><button type="button" class="btn" data-addftp>Add</button></div>`;
+}
+const ftpHistHtml=()=>`<div class="lab">FTP history</div><p class="muted">Each ride is rated against the FTP on its date. Changing the FTP above starts a new entry from today; add earlier test results here.</p><div id="ftpHist">${ftpHistRows()}</div>`;
+async function editFtpHistory(hist){
+  const saved=await storeFtp(hist);
+  const box=$('#ftpHist'); if(box) box.innerHTML=ftpHistRows();
+  const cur=$('#p_ftp'); if(cur) cur.value=getProfile().ftp??'';
+  toast(saved?'FTP history saved.':'FTP history saved on this device only.'); redrawGraphs();
+}
+function addFtp(){
+  const [d,w]=$$('.ftpadd input'), from=d.value, ftp=Math.round(+w.value||0);
+  if(!isDay(from)||from>todayStr()){toast('Choose a date, today or earlier.');return;}
+  if(ftp<50||ftp>600){toast('Enter an FTP between 50 and 600 watts.');return;}
+  return editFtpHistory([...ftpHistory().filter(x=>x.from!==from),{from,ftp}]);
 }
 /* ---------- health records: DEXA, grip strength and VO2 max reports, and their trends ---------- */
 const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/';
