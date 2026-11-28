@@ -96,6 +96,9 @@ figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:spac
 .trend polyline{fill:none;stroke-width:2}.trend polyline.s0{stroke:var(--data)}.trend polyline.s1{stroke:var(--s1)}.trend circle{stroke:var(--surface);stroke-width:2}.trend circle.s0{fill:var(--data)}.trend circle.s1{fill:var(--s1)}.trend circle.hit{fill:transparent;stroke:none}
 .legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;margin:2px 0}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;background:var(--data)}.legend i.s1{background:var(--s1)}
 .dbody h3{margin:6px 0 0;font-size:15px}.scans{display:flex;gap:12px;justify-content:center;margin:10px 0}.scans figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;flex:0 1 220px}.scans button{border:0;background:none;padding:0;max-width:100%}.scans img{display:block;max-width:100%;max-height:440px;margin:auto;border-radius:8px}.scans figcaption{font-size:12px;color:var(--muted);text-align:center}
+.tk-good{--t:var(--ok)}.tk-close{--t:var(--warn)}.tk-off{--t:var(--bad)}.tk-sofar{--t:var(--data)}.tk-none{--t:var(--muted)}
+.tgt{border-left:5px solid var(--t);background:color-mix(in srgb,var(--t) 9%,transparent)}.tgt em{display:block;font-style:normal;font-size:12.5px;font-weight:650;color:var(--t)}.tgt em i{font-style:normal}
+.tscore span,.tfield~p b{color:var(--t)}.tscore span{margin-left:10px;font-size:12.5px}.tfield{margin-bottom:6px}.tfield b{color:var(--ink)}
 #garmin h2{margin:0}#garmin p{margin:6px 0}.stat small{display:block;font-size:11px}
 .gsetup ol{margin:6px 0;padding-left:20px}.gsetup li{margin-bottom:6px}.gsetup .linkbtn{padding:2px 4px}
 .trend rect.s0{fill:var(--data)}.trend rect.s1{fill:var(--s1)}.trend rect.hit{fill:transparent}
@@ -182,9 +185,9 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-28 · exercise tool v1.13 · fat burnt in report tables';
+const VERSION='2026-11-28 · exercise tool v1.14 · daily targets and colour codes';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
-const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
+const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',targets:'exercise-targets-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
 const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}};
 const lsSet=(k,v)=>{try{v===null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
@@ -815,7 +818,7 @@ async function enterApp(u){
   user=u; $('#gate').hidden=true; $('#main').hidden=false;
   const c=lsGet(LS.cache); if(c&&c.user===u.id){rows=c.rows;sortRows();}
   render();
-  if(sb.auth.getUser) sb.auth.getUser().then(({data})=>{if(data&&data.user&&user&&data.user.id===user.id){user=data.user;lsSet(LS.maxHr,data.user.user_metadata?.maxHr||null);lsSet(LS.profile,data.user.user_metadata?.profile||null);redrawGraphs();}}).catch(()=>{});   // picks up zones changed on another device
+  if(sb.auth.getUser) sb.auth.getUser().then(({data})=>{if(data&&data.user&&user&&data.user.id===user.id){user=data.user;lsSet(LS.maxHr,data.user.user_metadata?.maxHr||null);lsSet(LS.profile,data.user.user_metadata?.profile||null);lsSet(LS.targets,data.user.user_metadata?.targets||null);redrawGraphs();renderGarmin();}}).catch(()=>{});   // picks up zones changed on another device
   const healthReady=loadHealth().catch(e=>console.error(e));
   loadGarmin().catch(e=>console.error(e));
   if(await loadRows()){
@@ -833,7 +836,7 @@ async function initDb(){
   if(!window.supabase){showGate('signin','The database library did not load. Check the connection and reload the page.');return;}
   try{sb=window.supabase.createClient(c.url,c.key,{auth:{storageKey:LS.auth,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});}
   catch(e){lsSet(LS.sb,null);showGate('connect',e.message);return;}
-  sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'&&user){user=null;rows=[];loaded=false;health=[];healthState='loading';healthQueue=[];healthBusy='';gDays=[];gState='loading';gResult=null;gBusy='';lsSet(GLS.synced,null);lsSet(GLS.pending,null);lsSet(LS.cache,null);lsSet(LS.profile,null);lsSet(LS.maxHr,null);$$('dialog[open]').forEach(d=>d.close());showGate('signin');}});
+  sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'&&user){user=null;rows=[];loaded=false;health=[];healthState='loading';healthQueue=[];healthBusy='';gDays=[];gState='loading';gResult=null;gBusy='';lsSet(GLS.synced,null);lsSet(GLS.pending,null);lsSet(LS.cache,null);lsSet(LS.targets,null);lsSet(LS.profile,null);lsSet(LS.maxHr,null);$$('dialog[open]').forEach(d=>d.close());showGate('signin');}});
   const {data}=await sb.auth.getSession();
   if(data.session) await enterApp(data.session.user); else showGate('signin');
 }
@@ -2452,6 +2455,69 @@ async function garminSync(days){
   gBusy=''; gResult=res; if(res.added) afterChange(); renderGarmin();
 }
 
+/* ----- targets for the latest daily figures ----- */
+const getTargets=()=>(user&&user.user_metadata&&user.user_metadata.targets)||lsGet(LS.targets)||{};
+/* key, accepted range for an own target, input step, unit in the targets form */
+const TFIELDS={sleepH:[4,12,0.25,'hours, at least'],sleepScore:[1,100,1,'or more'],rhr:[30,120,1,'bpm or less'],hrv:[5,300,1,'ms or more'],stress:[1,100,1,'or less'],bbHigh:[1,100,1,'or more'],steps:[500,60000,100,'or more'],weight:[30,250,0.1,'kg goal']};
+/* the suggested value: general guidance, except HRV, which is compared with your own recent nights */
+function suggestedTarget(k,day){
+  const age=ageOn(getProfile().dob,todayStr());
+  switch(k){
+    case 'sleepH':return {v:7,why:`7 to ${age>=65?8:9} hours for your age group`};
+    case 'sleepScore':return {v:80,why:'80 or more is rated Good by Garmin'};
+    case 'rhr':return {v:60,why:'adults are usually 60 to 100; fitter people are often lower'};
+    case 'hrv':{const from=addDays(day,-30), prior=gDays.filter(r=>r.local_date<day&&r.local_date>=from&&r.data.hrv!=null).map(r=>r.data.hrv);
+      return prior.length<7?{v:null,why:'needs 7 earlier nights in the last 30 days'}:{v:Math.round(prior.reduce((a,b)=>a+b,0)/prior.length*.9),why:'90% of your average over the 30 days before'};}
+    case 'stress':return {v:25,why:'0 to 25 is Garmin\'s resting range'};
+    case 'bbHigh':return {v:76,why:'76 or more is very high reserve on Garmin\'s scale'};
+    case 'steps':return age>=60?{v:6000,why:'research links 6,000 to 8,000 a day with benefit at 60 and over'}:{v:8000,why:'research links 8,000 to 10,000 a day with benefit under 60'};
+  }
+  return {v:null,why:'set your own goal'};
+}
+/* status: good, close, off, sofar (steps still counting today) or none (nothing to compare with) */
+function rateDaily(k,value,day){
+  const s=suggestedTarget(k,day), own=getTargets()[k], t=own??s.v, fmt=GTILES.find(x=>x[0]===k)[2];
+  if(t==null) return {status:'none',word:k==='hrv'?'Not enough history':'No target set',target:k==='hrv'?'Target after 7 nights':'Set a target',t,s};
+  const out=(status,word,target)=>({status,word,target,t,s});
+  const grade=(good,close,low,target)=>good?out('good','On target',target):close?out('close','Close',target):out('off',low,target);
+  if(k==='sleepH'){
+    const v=Math.round(value*60)/60, top=Math.max(ageOn(getProfile().dob,todayStr())>=65?8:9,t+1), target=`Target ${+t.toFixed(2)} to ${+top.toFixed(2)} h`;
+    if(v>top) return out(v<=top+1?'close':'off','Above range',target);
+    return grade(v>=t,v>=t-1,'Well under',target);
+  }
+  if(k==='rhr'){const target=`Target ${t} bpm or less`;
+    if(value<40&&value<=t) return out('close','Very low',target);
+    return grade(value<=t,value<=Math.max(100,t+15),'High',target);}
+  if(k==='stress') return grade(value<=t,value<=t+25,'High',`Target ${t} or less`);
+  if(k==='weight'){const d=Math.round(Math.abs(value-t)*10)/10;return grade(d<=1,d<=3,`${d} kg from goal`,`Goal ${fmt(t)}`);}
+  const floor={sleepScore:t-20,bbHigh:t-25,hrv:t*.85,steps:t*.7}[k], target=`Target ${k==='steps'?t.toLocaleString('en-AU'):t}${k==='hrv'?' ms':''} or more`;
+  if(k==='steps'&&day===todayStr()&&value<t) return out('sofar',`${Math.floor(value/t*100)}% so far`,target);
+  return grade(value>=t,value>=floor,'Well under',target);
+}
+const TMARK={good:'✓',close:'!',off:'✕',sofar:'…',none:'–'};
+function openTargets(){
+  const d=$('#garminDlg'), own=getTargets();
+  d.innerHTML=`<div class="dhead">Daily targets</div><div class="dbody"><p class="muted">Leave a box empty to use the suggested value. These are general guides, not medical advice.</p>
+    ${GTILES.map(([k,label])=>{const s=suggestedTarget(k,todayStr()),[min,max,step,unit]=TFIELDS[k];
+      return `<label class="f tfield"><span><b>${label}</b> (${unit})</span><input type="number" inputmode="decimal" id="t_${k}" min="${min}" max="${max}" step="${step}" value="${own[k]??''}" placeholder="${s.v==null?(k==='hrv'?'Automatic':'Not set'):'Suggested '+s.v}"><small class="muted">${s.v==null?'':'Suggested '+s.v.toLocaleString('en-AU')+': '}${s.why}</small></label>`;}).join('')}
+    <p class="muted"><b class="tk-good">✓ Green</b> meets the target. <b class="tk-close">! Amber</b> is near it: sleep within 1 hour, sleep score within 20, stress and Body Battery within 25, HRV within 15%, steps at least 70%, weight within 3 kg (green within 1 kg), resting heart rate above target but not over 100. <b class="tk-off">✕ Red</b> is further away.</p></div>
+    <div class="dfoot"><button type="button" class="btn" id="gResetTargets">Use suggested</button><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn primary" id="gSaveTargets">Save targets</button></div>`;
+  if(!d.open){d.showModal(); d.scrollTop=0;}
+}
+async function saveTargets(reset){
+  const targets={};
+  if(!reset) for(const [k,label] of GTILES){
+    const el=$('#t_'+k), v=el.value.trim(), [min,max]=TFIELDS[k];
+    if(el.validity.badInput||(v&&!(+v>=min&&+v<=max))){toast(`${label} target should be between ${min} and ${max}.`);return;}
+    if(v) targets[k]=+v;
+  }
+  lsSet(LS.targets,targets);
+  user.user_metadata={...(user.user_metadata||{}),targets};
+  $('#garminDlg').close(); renderGarmin();
+  try{const {error}=await sb.auth.updateUser({data:{targets}});if(error)throw error;toast('Targets saved.');}
+  catch(e){toast('Targets saved on this device only.');}
+}
+
 /* ----- the panel on the main page ----- */
 function garminSetup(){
   return `<details class="gsetup"><summary>How to set up Garmin sync</summary><ol>
@@ -2473,15 +2539,18 @@ function garminResult(r){
 function renderGarmin(){
   const box=$('#garmin'); if(!box) return;
   const open=$('.gsetup',box)?.open, has=gDays.some(r=>Object.keys(r.data).some(k=>k!=='acts'));
-  let h=`<div class="hhead"><h2>Garmin</h2><div class="btnrow">${gState==='ok'?`<button type="button" class="btn primary" id="gSync" ${gBusy?'disabled':''}>Sync Garmin</button>`:''}${has?'<button type="button" class="btn" id="gTrends">Daily trends</button>':''}</div></div>`;
+  let h=`<div class="hhead"><h2>Garmin</h2><div class="btnrow">${gState==='ok'?`<button type="button" class="btn primary" id="gSync" ${gBusy?'disabled':''}>Sync Garmin</button>`:''}${has?'<button type="button" class="btn" id="gTrends">Daily trends</button><button type="button" class="btn" id="gTargets">Targets</button>':''}</div></div>`;
   if(gState==='setup') h+=`<p class="warnnote">To bring in new activities and daily health straight from Garmin, finish the setup below, then press Check again.</p>${garminSetup()}<div class="btnrow"><button type="button" class="btn" id="gRetry">Check again</button></div>`;
   else if(gState==='error') h+=`<p class="bad">${esc(gError)}</p><button type="button" class="btn" id="gRetry">Try again</button>`;
   else if(gState==='loading') h+='<p class="muted">Loading…</p>';
   else{
     if(has){
+      const rated=[];
       const tiles=GTILES.map(([k,label,fmt])=>{const r=gDays.find(r=>r.data[k]!=null);if(!r||r.local_date<addDays(todayStr(),-30))return '';
-        return `<div class="stat"><span>${label}</span><b>${esc(fmt(r.data[k]))}</b><small class="muted">${r.local_date===todayStr()?'today':dateOf(r.local_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</small></div>`;}).join('');
-      h+=tiles?`<div class="metrics">${tiles}</div>`:'<p class="muted">No daily figures in the last 30 days.</p>';
+        const g=rateDaily(k,r.data[k],r.local_date); rated.push(g.status);
+        return `<div class="stat tgt tk-${g.status}" data-k="${k}"><span>${label}</span><b>${esc(fmt(r.data[k]))}</b><em><i aria-hidden="true">${TMARK[g.status]}</i> ${g.word}</em><small class="muted">${g.target}</small><small class="muted">${r.local_date===todayStr()?'today':dateOf(r.local_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</small></div>`;}).join('');
+      const count=s=>rated.filter(x=>x===s).length, judged=count('good')+count('close')+count('off');
+      h+=tiles?`${judged?`<p class="tscore"><b>${count('good')} of ${judged} on target</b> <span class="tk-good">✓ ${count('good')}</span> <span class="tk-close">! ${count('close')} close</span> <span class="tk-off">✕ ${count('off')} off</span></p>`:''}<div class="metrics">${tiles}</div>`:'<p class="muted">No daily figures in the last 30 days.</p>';
     }
     if(gBusy) h+=`<p class="muted" role="status">${esc(gBusy)}</p>`;
     else{
@@ -2539,6 +2608,9 @@ function garminClick(t){
     case 'gSync':garminSync();return true;
     case 'gMore':ask('Fetch more history','Reads further back in Garmin. Exercises already here are not added twice, and ones you deleted stay deleted.',['90 days','1 year','2 years','Cancel']).then(i=>{if(i>=0&&i<3)garminSync([90,365,730][i]);});return true;
     case 'gTrends':openGarminTrends();return true;
+    case 'gTargets':openTargets();return true;
+    case 'gSaveTargets':saveTargets(false);return true;
+    case 'gResetTargets':saveTargets(true);return true;
     case 'gRetry':gState='loading';renderGarmin();loadGarmin();return true;
     case 'gCopySql':gCopy(GARMIN_SQL,'Copied. Paste it into the Supabase SQL Editor.');return true;
     case 'gCopyRelay':gCopy(GARMIN_RELAY,'Copied. Paste it into the garmin function in Supabase.');return true;
