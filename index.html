@@ -182,7 +182,7 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-28 · exercise tool v1.12 · calories shown as kg of fat';
+const VERSION='2026-11-28 · exercise tool v1.13 · fat burnt in report tables';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
 const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
@@ -691,14 +691,16 @@ async function closeEditor(){
 /* ---------- calories burnt shown as body fat (energy equivalent) ---------- */
 const FAT_KCAL=7700;        // energy usually allowed for 1 kg of body fat
 const FATBLOCK='<svg viewBox="0 0 30 22" aria-hidden="true"><rect x="1" y="1" width="28" height="20" rx="5" fill="#f2c94c"/><path d="M6 8q4-4 9 0M14 15q4 3 9-1" fill="none" stroke="#fbe7a1" stroke-width="2.5" stroke-linecap="round"/></svg>';
+/* kg to 3 decimals under 1 kg, otherwise 2 */
+function fatText(cal){const kg=cal/FAT_KCAL,places=kg<1?3:2;return kg.toLocaleString('en-AU',{minimumFractionDigits:places,maximumFractionDigits:places})+' kg';}
 function fatHtml(cal,max=12){
   if(!(cal>0)) return '';
-  const kg=cal/FAT_KCAL, places=kg<1?3:2, text=kg.toLocaleString('en-AU',{minimumFractionDigits:places,maximumFractionDigits:places});
+  const kg=cal/FAT_KCAL;
   const full=Math.floor(kg), part=Math.round((kg-full)*100), shown=Math.min(full,max);   // one block per kg, the last part filled
   const one=p=>`<span class="fatblk">${FATBLOCK}<span style="clip-path:inset(0 ${100-p}% 0 0)">${FATBLOCK}</span></span>`;
   const icons=Array(shown).fill(one(100)).join('')+(part&&full<max?one(Math.min(part,99)):'');
   const more=full>max||(full===max&&part)?`<b class="more">+ ${(kg-shown).toLocaleString('en-AU',{maximumFractionDigits:2})} kg more</b>`:'';
-  return `<figure class="fat"><figcaption><b>🔥 ${kg<.001?'Less than 0.001':'≈ '+text} kg of fat burnt</b><small>${Math.round(cal).toLocaleString('en-AU')} cal · energy equivalent at ${FAT_KCAL.toLocaleString('en-AU')} cal per kg</small></figcaption><div class="blocks">${icons}${more}</div></figure>`;
+  return `<figure class="fat"><figcaption><b>🔥 ${kg<.001?'Less than 0.001 kg':'≈ '+fatText(cal)} of fat burnt</b><small>${Math.round(cal).toLocaleString('en-AU')} cal · energy equivalent at ${FAT_KCAL.toLocaleString('en-AU')} cal per kg</small></figcaption><div class="blocks">${icons}${more}</div></figure>`;
 }
 
 /* ---------- detail view ---------- */
@@ -2111,12 +2113,12 @@ const sessionsIn=(from,to)=>rows.filter(r=>r.data.date>=from&&r.data.date<=to);
 function totals(list){
   const a=list.map(r=>r.data), sum=k=>a.reduce((n,x)=>n+(x[k]||0),0);
   const hr=a.filter(x=>x.avgHr&&x.duration), hrTime=hr.reduce((n,x)=>n+x.duration,0);
-  return {sessions:a.length,days:new Set(a.map(x=>x.date)).size,duration:sum('duration'),distance:sum('distance'),calories:sum('calories'),ascent:sum('ascent'),
+  return {sessions:a.length,days:new Set(a.map(x=>x.date)).size,duration:sum('duration'),distance:sum('distance'),calories:sum('calories'),fat:sum('calories'),ascent:sum('ascent'),
     avgHr:hrTime?Math.round(hr.reduce((n,x)=>n+x.avgHr*x.duration,0)/hrTime):null};
 }
 const num=v=>Math.round(v).toLocaleString('en-AU');
 const km=v=>(v/1000).toLocaleString('en-AU',{minimumFractionDigits:1,maximumFractionDigits:1})+' km';
-const PR_MEASURES=[['sessions','Sessions',num],['days','Active days',num],['duration','Time',durText],['distance','Distance',km],['calories','Calories',num],['ascent','Elevation gain',v=>num(v)+' m'],['avgHr','Average heart rate',v=>v+' bpm']];
+const PR_MEASURES=[['sessions','Sessions',num],['days','Active days',num],['duration','Time',durText],['distance','Distance',km],['calories','Calories',num],['fat','Fat burnt',fatText],['ascent','Elevation gain',v=>num(v)+' m'],['avgHr','Average heart rate',v=>v+' bpm']];
 /* a difference that rounds to nothing is shown as no change */
 function changeText(now,was,fmt){
   if(now==null||was==null) return '–';
@@ -2132,9 +2134,9 @@ function prByType(list,before){
   const body=Object.keys(TYPES).map(type=>{
     const now=totals(list.filter(r=>r.data.type===type)), was=totals(before.filter(r=>r.data.type===type));
     if(!now.sessions&&!was.sessions) return '';
-    return `<tr data-t="${type}"><th scope="row"><i class="key" style="background:var(--c-${type})"></i>${TYPES[type].label}</th><td>${now.sessions}</td><td>${durText(now.duration)}</td><td>${now.distance?km(now.distance):'–'}</td><td>${now.calories?num(now.calories):'–'}</td><td>${now.avgHr??'–'}</td><td>${before.length?changeText(now.duration,was.duration,durText):'–'}</td></tr>`;
+    return `<tr data-t="${type}"><th scope="row"><i class="key" style="background:var(--c-${type})"></i>${TYPES[type].label}</th><td>${now.sessions}</td><td>${durText(now.duration)}</td><td>${now.distance?km(now.distance):'–'}</td><td>${now.calories?num(now.calories):'–'}</td><td>${now.fat?fatText(now.fat):'–'}</td><td>${now.avgHr??'–'}</td><td>${before.length?changeText(now.duration,was.duration,durText):'–'}</td></tr>`;
   }).join('');
-  return `<section><h2>By activity</h2>${prTable(['Activity','Sessions','Time','Distance','Calories','Avg HR','Change in time'],body)}</section>`;
+  return `<section><h2>By activity</h2>${prTable(['Activity','Sessions','Time','Distance','Calories','Fat burnt','Avg HR','Change in time'],body)}</section>`;
 }
 /* minutes per day (month) or per week from Monday (quarter), stacked by activity */
 function prChart(list,r,span){
@@ -2167,12 +2169,12 @@ function prMonths(r){
   const body=[0,1,2].map(i=>{
     const m=periodOf('month',stepPeriod('month',r.cur.from,i)); if(m.from>r.end) return '';
     const t=totals(sessionsIn(m.from,m.to));
-    return `<tr data-month="${m.from}"><th scope="row">${m.label}${m.to>r.end?' (to date)':''}</th><td>${t.sessions}</td><td>${t.days}</td><td>${durText(t.duration)}</td><td>${km(t.distance)}</td><td>${num(t.calories)}</td></tr>`;
+    return `<tr data-month="${m.from}"><th scope="row">${m.label}${m.to>r.end?' (to date)':''}</th><td>${t.sessions}</td><td>${t.days}</td><td>${durText(t.duration)}</td><td>${km(t.distance)}</td><td>${num(t.calories)}</td><td>${t.fat?fatText(t.fat):'–'}</td></tr>`;
   }).join('');
-  return `<section><h2>Month by month</h2>${prTable(['Month','Sessions','Active days','Time','Distance','Calories'],body)}</section>`;
+  return `<section><h2>Month by month</h2>${prTable(['Month','Sessions','Active days','Time','Distance','Calories','Fat burnt'],body)}</section>`;
 }
 function prBest(list){
-  const best=[['Longest session','duration',durText],['Farthest','distance',km],['Most calories','calories',v=>num(v)+' cal'],['Most elevation','ascent',v=>num(v)+' m'],['Highest average power','avgPower',v=>v+' W'],['Highest heart rate','maxHr',v=>v+' bpm']].map(([name,k,fmt])=>{
+  const best=[['Longest session','duration',durText],['Farthest','distance',km],['Most calories','calories',v=>`${num(v)} cal (${fatText(v)} fat)`],['Most elevation','ascent',v=>num(v)+' m'],['Highest average power','avgPower',v=>v+' W'],['Highest heart rate','maxHr',v=>v+' bpm']].map(([name,k,fmt])=>{
     const r=list.filter(x=>x.data[k]>0).sort((p,q)=>q.data[k]-p.data[k])[0];
     return r?`<tr><th scope="row">${name}</th><td><b>${fmt(r.data[k])}</b></td><td>${TYPES[r.data.type]?.label||''}${r.data.title?`: ${esc(r.data.title)}`:''}</td><td>${shortDay(r.data.date)}</td></tr>`:'';
   }).join('');
@@ -2203,8 +2205,8 @@ function prTests(r){
 }
 function prSessions(list){
   const body=[...list].sort((a,b)=>(a.data.date+(a.data.time||'')).localeCompare(b.data.date+(b.data.time||''))).map(x=>{const a=x.data;
-    return `<tr><th scope="row">${shortDay(a.date)}</th><td>${TYPES[a.type]?.label||''}</td><td class="wraps">${esc(a.title||'')}</td><td>${hms(a.duration)||'–'}</td><td>${a.distance?km(a.distance):'–'}</td><td>${a.avgHr??'–'}</td><td>${a.calories?num(a.calories):'–'}</td></tr>`;}).join('');
-  return `<section><h2>Sessions</h2>${prTable(['Date','Activity','Title','Time','Distance','Avg HR','Calories'],body)}</section>`;
+    return `<tr><th scope="row">${shortDay(a.date)}</th><td>${TYPES[a.type]?.label||''}</td><td class="wraps">${esc(a.title||'')}</td><td>${hms(a.duration)||'–'}</td><td>${a.distance?km(a.distance):'–'}</td><td>${a.avgHr??'–'}</td><td>${a.calories?num(a.calories):'–'}</td><td>${a.calories?fatText(a.calories):'–'}</td></tr>`;}).join('');
+  return `<section><h2>Sessions</h2>${prTable(['Date','Activity','Title','Time','Distance','Avg HR','Calories','Fat burnt'],body)}</section>`;
 }
 function periodReportHtml(){
   const r=reportRanges(prSpan,prStart,todayStr()), list=sessionsIn(r.cur.from,r.end), before=sessionsIn(r.prev.from,r.prevEnd);
@@ -2214,7 +2216,7 @@ function periodReportHtml(){
   return head+prSummary(now,was,r)+(now.calories?fatHtml(now.calories,10):'')+prByType(list,before)+prChart(list,r,prSpan)+(quarter?prMonths(r):'')
     +'<section id="prZones"><h2>Heart rate zones</h2><p class="muted">Working out zone times…</p></section>'
     +prBest(list)+prDaily(r)+prTests(r)+prSessions(list)
-    +'<p class="muted">Totals use the figures saved with each exercise; a figure not recorded counts as zero in totals. Average heart rate is weighted by session time.</p>';
+    +'<p class="muted">Totals use the figures saved with each exercise; a figure not recorded counts as zero in totals. Average heart rate is weighted by session time. Fat burnt is an energy equivalent (calories ÷ 7,700), not measured fat loss.</p>';
 }
 /* zone times need each session's heart rate detail, which the list does not load */
 async function prZones(){
