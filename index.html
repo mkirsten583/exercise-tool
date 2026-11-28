@@ -86,7 +86,11 @@ figure.zones,figure.power{margin:0 0 12px}.zones figcaption,.power figcaption{di
 .hbar{background:#eef0f2;border:1px solid #b9c0c7;border-bottom:0;border-radius:3px 3px 0 0;min-height:3px}.hbar:hover{background:#fff;border-color:#15212b}
 .plot .ftpline{stroke:var(--warn);stroke-width:1.5;stroke-dasharray:6 4;vector-effect:non-scaling-stroke}.ftpkey{color:var(--warn);font-weight:600}
 .p1{background:#9aa5b1}.p2{background:#4a86f0}.p3{background:#73bd60}.p4{background:#f6cd4a}.p5{background:#ea7040}.p6{background:#e84326}.p7{background:#8e4ec6}
-.power figcaption b{white-space:nowrap}.power figcaption span{text-align:right}.power .metrics{margin-bottom:8px}.power .stat small{display:block;font-size:11px;color:var(--muted)}.pwbar{display:block;height:5px;border-radius:3px;margin-top:3px}
+.power figcaption b{white-space:nowrap}.power figcaption span{text-align:right}.power .metrics{margin-bottom:8px}.power .stat small{display:block;font-size:11px;color:var(--muted)}.ptitle{font-size:12.5px;margin:2px 0 4px}
+.wdist{position:relative;height:210px;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:3px}.wdist i{position:absolute;bottom:0;font-style:normal}
+.wband{height:72%}.wband b{position:relative;z-index:1;pointer-events:none;display:block;text-align:center;margin-top:8px;font-size:12px;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.55)}
+.wbin{background:#eef0f2;border:1px solid #b9c0c7;border-bottom:0;border-radius:3px 3px 0 0;min-height:3px}.wbin:hover{background:#fff;border-color:#15212b}
+.bolt{color:#f5a623;font-size:15px}.hrsum small{font-size:12px}
 .z1{background:#4a86f0}.z2{background:#73bd60}.z3{background:#f6cd4a}.z4{background:#ea7040}.z5{background:#e84326}
 .hrsum{margin:4px 0 8px;font-size:13px;color:var(--muted)}.hrsum b{color:var(--ink);font-size:15px;margin-right:10px}.heart{color:#e03a2a;font-size:16px}
 .ftpset,.ftpadd,.maxhr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}.maxhr input,.ftpset input,.ftpadd input[type=number]{width:80px;margin:0 4px}.ftpadd input[type=date]{width:auto;margin:0 4px}.warnnote{color:var(--warn);margin:6px 0 0}
@@ -188,7 +192,7 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-28 · exercise tool v1.16 · power in reports';
+const VERSION='2026-11-28 · exercise tool v1.17 · power distribution graph';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
 const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',targets:'exercise-targets-v1',ftp:'exercise-ftp-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
@@ -1549,6 +1553,24 @@ function rideLoad(a,ftp){
   const iff=a.np/ftp;
   return {np:a.np,iff,tss:a.duration?Math.round(a.duration/3600*iff*iff*100):null,vi:a.avgPower?a.np/a.avgPower:null};
 }
+/* time at each power, as bars over the zone colour bands (the same style as the heart rate distribution).
+   Not pedalling would dwarf every other bar, so it is left off and stated below. */
+function powerDistHtml(detail,a,ftp){
+  const secs=powerBins(detail)?.secs||{}, watts=Object.keys(secs).map(Number).filter(w=>w>0&&secs[w]>0).sort((p,q)=>p-q);
+  if(!watts.length) return '';
+  const total=watts.reduce((n,w)=>n+secs[w],0), still=secs[0]||0;
+  let seen=0; const high=watts.find(w=>(seen+=secs[w])>=total*.995);   // brief sprints do not stretch the axis
+  let hi=Math.ceil(Math.max(ftp*1.6,high+5)/50)*50; const size=[5,10,15,20,25].find(s=>hi/s<=60)||50; hi=Math.ceil(hi/size)*size;
+  const bins=new Map(); for(const w of watts){const k=Math.min(hi-size,Math.floor(w/size)*size);bins.set(k,(bins.get(k)||0)+secs[w]);}
+  const top=Math.max(...bins.values()), x=w=>Math.min(hi,w)/hi*100, over=watts[watts.length-1]>=hi;
+  const edges=[0,...PZONES.slice(0,-1).map(z=>ftp*z[2]/100),hi];
+  const bands=PZONES.map((z,i)=>{const l=x(edges[i]),r=x(edges[i+1]);return r>l?`<i class="wband p${i+1}" style="left:${l.toFixed(2)}%;width:${(r-l).toFixed(2)}%"><b>Z${i+1}</b></i>`:'';}).join('');
+  const bars=[...bins].sort((p,q)=>p[0]-q[0]).map(([k,t])=>`<i class="wbin" data-tip="${over&&k===hi-size?`${k} W and over`:`${k}–${k+size-1} W`}: ${hms(Math.round(t))||'0:00'}" style="left:${x(k).toFixed(2)}%;width:${(x(k+size)-x(k)).toFixed(2)}%;height:${(t/top*88).toFixed(1)}%"></i>`).join('');
+  const peak=a.maxPower||watts[watts.length-1], mean=a.avgPower||Math.round(watts.reduce((n,w)=>n+w*secs[w],0)/(total+still));
+  return `<div class="wdist" role="img" aria-label="Time at each power from ${watts[0]} to ${watts[watts.length-1]} watts, over power zone colour bands">${bands}${bars}</div>
+    <div class="axis">${[0,1,2,3,4].map(i=>`<span>${Math.round(hi*i/4)}${i===4&&over?'+':''} W</span>`).join('')}</div>
+    <p class="hrsum"><span class="bolt" aria-hidden="true">⚡</span> Max <b>${peak}</b> Avg <b>${mean}</b>${still?` <small>Not pedalling: ${hms(Math.round(still))} (not drawn)</small>`:''}</p>`;
+}
 const ftpEntry=`<div class="ftpset"><label>Your FTP <input type="number" inputmode="numeric" min="50" max="600" aria-label="Functional threshold power in watts"> W</label><button type="button" class="btn" data-saveftp>Apply</button></div>`;
 function powerHtml(detail,a){
   if(a.type!=='ride'||!powerBins(detail)) return '';
@@ -1561,7 +1583,9 @@ function powerHtml(detail,a){
   const stat=(label,v,sub)=>`<div class="stat"><span>${label}</span><b>${v}</b><small>${sub}</small></div>`;
   return `<figure class="power">${head(`FTP ${f.ftp} W (${esc(f.note)})`)}
     <div class="metrics">${a.avgPower?stat('Average power',a.avgPower+' W',Math.round(a.avgPower/f.ftp*100)+'% of FTP'):''}${l?stat('Normalised Power',l.np+' W',l.vi?`${l.vi.toFixed(2)} × average`:'surge-weighted')+stat('Intensity Factor',l.iff.toFixed(2),'1.00 = at FTP')+(l.tss!==null?stat('Training Stress Score',l.tss,'1 hour at FTP = 100'):''):''}</div>
-    ${z.zones.map((x,i)=>`<div class="zrow"><i class="sw p${i+1}"></i><span class="zn"><b>${x.name}</b><small>${x.what} · ${x.range}</small><i class="pwbar p${i+1}" style="width:${(x.share*100).toFixed(1)}%"></i></span><span class="zt">${hms(x.secs)||'0:00'}<small>${Math.round(x.share*100)}%</small></span></div>`).join('')}
+    <div class="ptitle"><b>Power distribution</b></div>
+    ${powerDistHtml(detail,a,f.ftp)}
+    ${z.zones.map((x,i)=>`<div class="zrow"><i class="sw p${i+1}"></i><span class="zn"><b>${x.name}</b><small>${x.what} · ${x.range}</small></span><span class="zt">${hms(x.secs)||'0:00'}<small>${Math.round(x.share*100)}%</small></span></div>`).join('')}
     <p class="muted">Time with no pedalling counts in Zone 1.${l&&a.duration<1200?' Normalised Power and the scores mean little for rides under 20 minutes.':''}</p>
     ${f.assumed?'<p class="warnnote">No FTP is recorded for the date of this ride. Add one under Settings, FTP history.</p>':''}
     ${z.exact?'':`<p class="muted">Zone times are approximate, from the smoothed graph.${a.np?'':' Normalised Power and training load need the FIT file.'}</p>`}
