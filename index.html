@@ -104,6 +104,12 @@ figure.zones{margin:0 0 12px}.zones figcaption{display:flex;justify-content:spac
 #toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:10}#toast.show{opacity:1}
 @media (max-width:560px){#stats,.metrics{grid-template-columns:1fr 1fr}.addbtn{font-size:12px}.cx img:nth-of-type(n+2){display:none}h1{width:100%}}
 body.reporting{overflow:hidden}
+.rbar .seg{margin:0;background:var(--surface)}.rbar .btn:disabled{opacity:.45}
+.reportbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pchart svg{display:block;width:100%;height:auto}.pchart .grid{stroke:var(--line)}.pchart text{font-size:11px;fill:var(--muted)}.pchart .hit{fill:transparent}
+.key{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}.pkeys{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px}.rpage .mars{margin-top:12px}.compare td.wraps{white-space:normal;min-width:110px}
+.prz{display:grid;grid-template-columns:minmax(0,14em) minmax(0,1fr) 9em;gap:8px;align-items:center;padding:3px 0;font-size:12.5px}.prz small{color:var(--muted)}.prbar{height:16px;border-left:1px solid var(--line)}.prbar i{display:block;height:100%;border-radius:0 4px 4px 0}
+@media (max-width:560px){.rpage{padding:12px}.rpage .compare th{white-space:normal}.rpage .compare th,.rpage .compare td{padding-left:4px;padding-right:4px}.rpage .compare th[scope=row]{min-width:84px}.prz{grid-template-columns:minmax(0,1fr) 9em}.prz .prbar{grid-column:1/-1;order:3}}
 #report{position:fixed;inset:0;z-index:5;overflow:auto;background:var(--bg);padding:0 10px 30px}
 .rbar{position:sticky;top:0;z-index:1;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px 0;background:var(--bg)}
 .rpage{max-width:900px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
@@ -112,13 +118,14 @@ body.reporting{overflow:hidden}
 .scanrow{display:flex;gap:14px;overflow-x:auto;align-items:flex-start;padding-bottom:6px}.scanrow figure{margin:0;flex:0 0 auto;text-align:center;font-size:12.5px}.scanrow button{border:0;background:none;padding:0}.scanrow img{display:block;height:380px;width:auto;margin:0 auto 4px;border-radius:8px}
 .charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px 18px}
 @media print{
-  :root{--bg:#edf0f3;--surface:#fff;--ink:#15212b;--muted:#5a6773;--line:#d3dae1;--hover:#e8edf1;--data:#2a78d6;--s1:#eb6834;--warn:#b26a00}
+  :root{--bg:#edf0f3;--surface:#fff;--ink:#15212b;--muted:#5a6773;--line:#d3dae1;--hover:#e8edf1;--data:#2a78d6;--s1:#eb6834;--warn:#b26a00;--c-ride:#1f6fd6;--c-walk:#2c7a4b;--c-run:#c2571a;--c-row:#0b7a99;--c-weights:#7c4fbf}
   @page{size:A4;margin:12mm}
   body.reporting{overflow:visible;background:#fff}body.reporting>:not(#report){display:none!important}
   #report{position:static;overflow:visible;background:#fff;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .noprint{display:none!important}.rpage{border:0;padding:0;max-width:none}
   .scrollx,.scanrow{overflow:visible}.scanrow{flex-wrap:wrap}.scanrow img{height:360px}
   .compare th,.compare td{padding:3px 4px;font-size:11px;white-space:normal}.compare th[scope=row]{min-width:0}
+  .prz{grid-template-columns:14em 1fr 9em}.prz .prbar{grid-column:auto;order:0}
   .charts{grid-template-columns:1fr 1fr}tr,figure{break-inside:avoid}h2,h3{break-after:avoid}
 }
 </style>
@@ -140,6 +147,7 @@ body.reporting{overflow:hidden}
     <div class="chips" id="filters"></div>
     <div class="seg" id="period"><button type="button" data-period="week">Week</button><button type="button" data-period="month">Month</button><button type="button" data-period="year">Year</button><button type="button" data-period="all">All</button></div>
     <div id="stats"></div><div id="marsTotal"></div>
+    <div class="reportbtns"><button type="button" class="btn" id="monthReport">Monthly report</button><button type="button" class="btn" id="quarterReport">Quarterly report</button></div>
     <div class="ctitle">Minutes per week, last 12 weeks</div>
     <div id="weeks"></div>
   </section>
@@ -174,7 +182,7 @@ const GRAPH_CLIENT_ID='f1651fed-b333-4de3-8986-f5fe0df09194';   // Azure applica
 const ONEDRIVE_FOLDER='marc.kirsten/Browser Tools/Exercise Tool';   // the calendar reads exercise-calendar.json from here
 const CALENDAR_URL='https://mkirsten583.github.io/home-calendar/';
 /* ================================================================================================================ */
-const VERSION='2026-11-28 · exercise tool v1.10 · heart rate distribution';
+const VERSION='2026-11-28 · exercise tool v1.11 · monthly and quarterly reports';
 /* localStorage names are unique to this tool: every page on the same GitHub Pages site shares storage */
 const LS={aiReports:'exercise-ai-reports-v1',sb:'exercise-sb-v1',auth:'exercise-sb-auth-v2',cache:'exercise-data-v1',client:'exercise-clientid-v1',hint:'exercise-login-hint-v1',autotry:'exercise-autosignin-at-v1',resume:'exercise-resume-v1',maxHr:'exercise-maxhr-v1',profile:'exercise-profile-v1',aiKey:'exercise-ai-key-v1',aiModel:'exercise-ai-model-v1'};
 const IN_FRAME=(()=>{try{return window.self!==window.top;}catch(e){return true;}})();
@@ -849,7 +857,7 @@ document.addEventListener('click',async e=>{
   const t=e.target.closest('button,[data-close]'); if(!t) return;
   const d=t.dataset;
   if(t.hasAttribute('data-close')) return t.closest('dialog').close();
-  if(reportClick(t)||healthClick(t)||garminClick(t)) return;
+  if(reportClick(t)||periodClick(t)||healthClick(t)||garminClick(t)) return;
   if(d.add) return openEditor(null,{type:d.add});
   if(d.filter!==undefined){filterType=d.filter;shown=60;return render();}
   if(d.period){period=d.period;return render();}
@@ -2038,21 +2046,24 @@ function reportHtml(){
   }).join('');
   return `<div class="rhead"><div><h1>Health trend report</h1><p class="muted">Prepared ${shortDay(todayStr())}</p></div></div>${sections||'<p class="muted">No health records yet.</p>'}<p class="muted">Figures are as saved from each report. Results from different machines or clinics may not be directly comparable.</p>`;
 }
-function openReport(){
+/* the full-screen report page, used by the health trend report and the monthly and quarterly report */
+function showReport(controls,body,file,title){
   $$('dialog[open]').forEach(d=>d.close());
-  const box=$('#report'), top=box.hidden?0:box.scrollTop;
-  box.innerHTML=`<div class="rbar noprint"><button type="button" class="btn primary" id="printReport">Print or save as PDF</button><button type="button" class="btn" id="saveReport">Download</button><button type="button" class="btn" id="closeReport">Close</button></div><div class="rpage">${reportHtml()}</div>`;
+  const box=$('#report'), top=box.hidden||box.dataset.file!==file?0:box.scrollTop;
+  box.dataset.file=file; box.dataset.title=title;
+  box.innerHTML=`<div class="rbar noprint">${controls}<button type="button" class="btn primary" id="printReport">Print or save as PDF</button><button type="button" class="btn" id="saveReport">Download</button><button type="button" class="btn" id="closeReport">Close</button></div><div class="rpage">${body}</div>`;
   box.hidden=false; document.body.classList.add('reporting'); box.scrollTop=top;
 }
+function openReport(){showReport('',reportHtml(),`health-trend-report-${todayStr()}`,`Health trend report ${todayStr()}`);}
 function closeReport(){const box=$('#report');box.hidden=true;box.innerHTML='';document.body.classList.remove('reporting');$('#tip').hidden=true;}
 /* a single file that opens in any browser, pictures and charts included */
 function downloadReportFile(){
   const page=$('#report .rpage').cloneNode(true);
   page.querySelectorAll('button.noprint,.hit').forEach(e=>e.remove());
   page.querySelectorAll('button').forEach(b=>b.replaceWith(...b.childNodes));
-  const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Health trend report ${todayStr()}</title><style>${$('style').textContent}</style></head><body class="reporting"><div id="report"><div class="rpage">${page.innerHTML}</div></div></body></html>`;
+  const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc($('#report').dataset.title)}</title><style>${$('style').textContent}</style></head><body class="reporting"><div id="report"><div class="rpage">${page.innerHTML}</div></div></body></html>`;
   const url=URL.createObjectURL(new Blob([html],{type:'text/html'})), a=document.createElement('a');
-  a.href=url; a.download=`health-trend-report-${todayStr()}.html`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),5000);
+  a.href=url; a.download=`${$('#report').dataset.file}.html`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
 async function reportGetScans(){
   const btn=$('#reportScansGet'); btn.disabled=true; btn.textContent='Getting the pictures…';
@@ -2077,6 +2088,175 @@ function reportClick(t){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#report').hidden&&!$('dialog[open]'))closeReport();});
 
+
+/* ---------- monthly and quarterly exercise report (shares the report overlay, printing and download) ---------- */
+let prSpan='month', prStart='', prRun=0;
+const monthsIn=span=>span==='quarter'?3:1;
+function periodOf(span,day){
+  const d=dateOf(day), n=monthsIn(span), m=d.getMonth()-d.getMonth()%n;
+  const from=new Date(d.getFullYear(),m,1), to=new Date(d.getFullYear(),m+n,0);
+  const mon=(x,o)=>x.toLocaleDateString('en-AU',o);
+  return {from:ymd(from),to:ymd(to),label:span==='quarter'?`${mon(from,{month:'long'})} to ${mon(to,{month:'long'})} ${from.getFullYear()}`:mon(from,{month:'long',year:'numeric'})};
+}
+const stepPeriod=(span,start,n)=>{const d=dateOf(start);return ymd(new Date(d.getFullYear(),d.getMonth()+n*monthsIn(span),1));};
+const dayGap=(a,b)=>Math.round((dateOf(b)-dateOf(a))/864e5);
+const dayPlus=(s,n)=>{const d=dateOf(s);d.setDate(d.getDate()+n);return ymd(d);};
+/* the period chosen and the one before it; an unfinished period is compared with the same number of days */
+function reportRanges(span,start,today){
+  const cur=periodOf(span,start), prev=periodOf(span,stepPeriod(span,cur.from,-1)), partial=today>=cur.from&&today<cur.to;
+  const end=partial?today:cur.to;
+  let prevEnd=prev.to; if(partial){const e=dayPlus(prev.from,dayGap(cur.from,today));if(e<prevEnd)prevEnd=e;}
+  return {cur,prev,end,prevEnd,partial};
+}
+const sessionsIn=(from,to)=>rows.filter(r=>r.data.date>=from&&r.data.date<=to);
+function totals(list){
+  const a=list.map(r=>r.data), sum=k=>a.reduce((n,x)=>n+(x[k]||0),0);
+  const hr=a.filter(x=>x.avgHr&&x.duration), hrTime=hr.reduce((n,x)=>n+x.duration,0);
+  return {sessions:a.length,days:new Set(a.map(x=>x.date)).size,duration:sum('duration'),distance:sum('distance'),calories:sum('calories'),ascent:sum('ascent'),
+    avgHr:hrTime?Math.round(hr.reduce((n,x)=>n+x.avgHr*x.duration,0)/hrTime):null};
+}
+const num=v=>Math.round(v).toLocaleString('en-AU');
+const km=v=>(v/1000).toLocaleString('en-AU',{minimumFractionDigits:1,maximumFractionDigits:1})+' km';
+const PR_MEASURES=[['sessions','Sessions',num],['days','Active days',num],['duration','Time',durText],['distance','Distance',km],['calories','Calories',num],['ascent','Elevation gain',v=>num(v)+' m'],['avgHr','Average heart rate',v=>v+' bpm']];
+/* a difference that rounds to nothing is shown as no change */
+function changeText(now,was,fmt){
+  if(now==null||was==null) return '–';
+  const d=now-was, size=fmt(Math.abs(d));
+  return !d||size===fmt(0)?'no change':(d>0?'+':'−')+size;
+}
+function prTable(head,body){return `<div class="scrollx"><table class="compare"><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;}
+function prSummary(now,was,r){
+  const body=PR_MEASURES.filter(([k])=>now[k]||was[k]).map(([k,name,fmt])=>`<tr data-m="${k}"><th scope="row">${name}</th><td><b>${now[k]==null?'–':fmt(now[k])}</b></td><td>${!was.sessions||was[k]==null?'–':fmt(was[k])}</td><td>${was.sessions?changeText(now[k],was[k],fmt):'–'}</td></tr>`).join('');
+  return `<section><h2>Summary</h2>${was.sessions?'':'<p class="muted">Nothing was logged in the period compared, so no changes are shown.</p>'}${prTable(['Measure',r.partial?'So far':'This period',r.partial?'Same days before':'Previous','Change'],body)}</section>`;
+}
+function prByType(list,before){
+  const body=Object.keys(TYPES).map(type=>{
+    const now=totals(list.filter(r=>r.data.type===type)), was=totals(before.filter(r=>r.data.type===type));
+    if(!now.sessions&&!was.sessions) return '';
+    return `<tr data-t="${type}"><th scope="row"><i class="key" style="background:var(--c-${type})"></i>${TYPES[type].label}</th><td>${now.sessions}</td><td>${durText(now.duration)}</td><td>${now.distance?km(now.distance):'–'}</td><td>${now.calories?num(now.calories):'–'}</td><td>${now.avgHr??'–'}</td><td>${before.length?changeText(now.duration,was.duration,durText):'–'}</td></tr>`;
+  }).join('');
+  return `<section><h2>By activity</h2>${prTable(['Activity','Sessions','Time','Distance','Calories','Avg HR','Change in time'],body)}</section>`;
+}
+/* minutes per day (month) or per week from Monday (quarter), stacked by activity */
+function prChart(list,r,span){
+  const bins=[];
+  for(let d=r.cur.from;d<=r.cur.to;){
+    const next=span==='month'?dayPlus(d,1):dayPlus(ymd(mondayOf(dateOf(d))),7);
+    bins.push({from:d,to:dayPlus(next,-1),mins:{}}); d=next;
+  }
+  for(const x of list){const a=x.data,b=bins.find(b=>a.date>=b.from&&a.date<=b.to);if(b&&a.duration)b.mins[a.type]=(b.mins[a.type]||0)+a.duration/60;}
+  const sum=b=>Object.values(b.mins).reduce((p,q)=>p+q,0), peak=Math.max(0,...bins.map(sum));
+  const title=span==='month'?'Minutes per day':'Minutes per week';
+  if(!peak) return '';
+  const step=[15,30,60,120,240,480,960].find(s=>peak/s<=4)||1920, top=Math.ceil(peak/step)*step;
+  const W=Math.max(320,Math.min(860,innerWidth-60)),H=200,L=40,B=20,T=8,cw=(W-L)/bins.length,bw=Math.max(3,Math.min(34,cw-3)),y=v=>T+(H-T-B)*(1-v/top);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title} by activity">`;
+  for(let v=0;v<=top;v+=step) s+=`<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" class="grid"/><text x="${L-5}" y="${y(v)+4}" text-anchor="end">${v}</text>`;
+  const every=Math.ceil(30/cw);
+  bins.forEach((b,i)=>{
+    const x=L+i*cw+(cw-bw)/2; let base=0;
+    for(const type of Object.keys(TYPES)){const m=b.mins[type];if(!m)continue;const h=y(base)-y(base+m);s+=`<rect class="pbar" x="${x.toFixed(1)}" y="${y(base+m).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,h-(base?1.5:0)).toFixed(1)}" rx="1.5" style="fill:var(--c-${type})"/>`;base+=m;}
+    const d=dateOf(b.from), lbl=span==='month'?String(d.getDate()):`${d.getDate()}/${d.getMonth()+1}`;
+    if(i%every===0) s+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-5}" text-anchor="middle">${lbl}</text>`;
+    const parts=Object.entries(b.mins).map(([t,m])=>`${TYPES[t].label} ${durText(m*60)}`).join(', ');
+    s+=`<rect class="hit" x="${(L+i*cw).toFixed(1)}" y="0" width="${cw.toFixed(1)}" height="${H}" data-tip="${span==='month'?shortDay(b.from):'Week from '+shortDay(b.from)}: ${parts||'nothing logged'}"/>`;
+  });
+  const used=Object.keys(TYPES).filter(t=>bins.some(b=>b.mins[t]));
+  return `<section><h2>${title}</h2><div class="pchart">${s}</svg></div><p class="pkeys">${used.map(t=>`<span><i class="key" style="background:var(--c-${t})"></i>${TYPES[t].label}</span>`).join('')}</p></section>`;
+}
+function prMonths(r){
+  const body=[0,1,2].map(i=>{
+    const m=periodOf('month',stepPeriod('month',r.cur.from,i)); if(m.from>r.end) return '';
+    const t=totals(sessionsIn(m.from,m.to));
+    return `<tr data-month="${m.from}"><th scope="row">${m.label}${m.to>r.end?' (to date)':''}</th><td>${t.sessions}</td><td>${t.days}</td><td>${durText(t.duration)}</td><td>${km(t.distance)}</td><td>${num(t.calories)}</td></tr>`;
+  }).join('');
+  return `<section><h2>Month by month</h2>${prTable(['Month','Sessions','Active days','Time','Distance','Calories'],body)}</section>`;
+}
+function prBest(list){
+  const best=[['Longest session','duration',durText],['Farthest','distance',km],['Most calories','calories',v=>num(v)+' cal'],['Most elevation','ascent',v=>num(v)+' m'],['Highest average power','avgPower',v=>v+' W'],['Highest heart rate','maxHr',v=>v+' bpm']].map(([name,k,fmt])=>{
+    const r=list.filter(x=>x.data[k]>0).sort((p,q)=>q.data[k]-p.data[k])[0];
+    return r?`<tr><th scope="row">${name}</th><td><b>${fmt(r.data[k])}</b></td><td>${TYPES[r.data.type]?.label||''}${r.data.title?`: ${esc(r.data.title)}`:''}</td><td>${shortDay(r.data.date)}</td></tr>`:'';
+  }).join('');
+  return best?`<section><h2>Highlights</h2>${prTable(['','Figure','Session','Date'],best)}</section>`:'';
+}
+/* daily health averages, counting only the days that have each figure */
+const PR_DAILY=[['sleepH','Sleep per night',v=>durText(v*3600)],['sleepScore','Sleep score',v=>String(Math.round(v))],['rhr','Resting heart rate',v=>Math.round(v)+' bpm'],['hrv','HRV',v=>Math.round(v)+' ms'],['stress','Stress',v=>String(Math.round(v))],['bbHigh','Body Battery high',v=>String(Math.round(v))],['steps','Steps per day',num],['weight','Weight',v=>(Math.round(v*10)/10)+' kg']];
+function dailyAverage(k,from,to){
+  const v=gDays.filter(d=>d.local_date>=from&&d.local_date<=to&&d.data[k]!=null).map(d=>d.data[k]);
+  return v.length?{avg:v.reduce((p,q)=>p+q,0)/v.length,n:v.length}:null;
+}
+function prDaily(r){
+  const body=PR_DAILY.map(([k,name,fmt])=>{
+    const now=dailyAverage(k,r.cur.from,r.end); if(!now) return '';
+    const was=dailyAverage(k,r.prev.from,r.prevEnd);
+    return `<tr data-g="${k}"><th scope="row">${name}</th><td><b>${fmt(now.avg)}</b></td><td>${was?fmt(was.avg):'–'}</td><td>${was?changeText(k==='sleepH'||k==='weight'?now.avg:Math.round(now.avg),k==='sleepH'||k==='weight'?was.avg:Math.round(was.avg),fmt):'–'}</td><td>${now.n}</td></tr>`;
+  }).join('');
+  return body?`<section><h2>Daily health (averages)</h2>${prTable(['Measure','This period','Previous','Change','Days with data'],body)}</section>`:'';
+}
+function prTests(r){
+  const list=health.filter(h=>h.local_date>=r.cur.from&&h.local_date<=r.end).sort((a,b)=>a.local_date.localeCompare(b.local_date));
+  const key={dexa:[['bodyFat','body fat','%'],['leanMass','lean mass',' kg']],grip:[['forceL','peak force left',' kg'],['forceR','right',' kg']],vo2:[['vo2','VO2 max',' mL/kg/min'],['maxHr','max heart rate',' bpm']]};
+  const body=list.map(h=>{
+    const figs=(key[h.kind]||[]).filter(([k])=>h.data.values[k]!=null).map(([k,n,u])=>`${n} ${h.data.values[k]}${u}`).join(', ');
+    return `<tr><th scope="row">${KINDS[h.kind].label}</th><td>${shortDay(h.local_date)}</td><td>${esc(figs||'–')}</td></tr>`;
+  }).join('');
+  return body?`<section><h2>Health tests in this period</h2>${prTable(['Test','Date','Main figures'],body)}</section>`:'';
+}
+function prSessions(list){
+  const body=[...list].sort((a,b)=>(a.data.date+(a.data.time||'')).localeCompare(b.data.date+(b.data.time||''))).map(x=>{const a=x.data;
+    return `<tr><th scope="row">${shortDay(a.date)}</th><td>${TYPES[a.type]?.label||''}</td><td class="wraps">${esc(a.title||'')}</td><td>${hms(a.duration)||'–'}</td><td>${a.distance?km(a.distance):'–'}</td><td>${a.avgHr??'–'}</td><td>${a.calories?num(a.calories):'–'}</td></tr>`;}).join('');
+  return `<section><h2>Sessions</h2>${prTable(['Date','Activity','Title','Time','Distance','Avg HR','Calories'],body)}</section>`;
+}
+function periodReportHtml(){
+  const r=reportRanges(prSpan,prStart,todayStr()), list=sessionsIn(r.cur.from,r.end), before=sessionsIn(r.prev.from,r.prevEnd);
+  const now=totals(list), was=totals(before), quarter=prSpan==='quarter';
+  const head=`<div class="rhead"><div><h1>${quarter?'Quarterly':'Monthly'} exercise report</h1><p><b>${r.cur.label}</b>${r.partial?`, to ${shortDay(r.end)} (not finished)`:''}</p><p class="muted">Prepared ${shortDay(todayStr())}. Compared with ${r.partial?`${shortDay(r.prev.from)} to ${shortDay(r.prevEnd)}`:r.prev.label}.</p></div></div>`;
+  if(!list.length) return head+`<p class="muted">No exercise logged in this period.${before.length?` There ${before.length===1?'was 1 session':`were ${before.length} sessions`} in the period compared.`:''}</p>${prDaily(r)}${prTests(r)}`;
+  return head+prSummary(now,was,r)+(now.calories?marsHtml(now.calories,10):'')+prByType(list,before)+prChart(list,r,prSpan)+(quarter?prMonths(r):'')
+    +'<section id="prZones"><h2>Heart rate zones</h2><p class="muted">Working out zone times…</p></section>'
+    +prBest(list)+prDaily(r)+prTests(r)+prSessions(list)
+    +'<p class="muted">Totals use the figures saved with each exercise; a figure not recorded counts as zero in totals. Average heart rate is weighted by session time.</p>';
+}
+/* zone times need each session's heart rate detail, which the list does not load */
+async function prZones(){
+  const run=++prRun, r=reportRanges(prSpan,prStart,todayStr()), list=sessionsIn(r.cur.from,r.end);
+  if(!$('#prZones')) return;
+  try{
+    const detail={};
+    for(let from=0;;from+=100){
+      const {data,error}=await sb.from('activities').select('id,detail').gte('local_date',r.cur.from).lte('local_date',r.end).order('id').range(from,from+99);
+      if(error) throw new Error(sbFail(error));
+      data.forEach(d=>detail[d.id]=d.detail); if(data.length<100) break;
+    }
+    const box=$('#prZones'); if(run!==prRun||!box) return;
+    const secs=ZONES.map(()=>0); let used=0, rough=0, assumed=false;
+    for(const x of list){
+      const m=maxHrInfo(x.data), z=detail[x.id]&&zoneTimes(detail[x.id],m.max); if(!z) continue;
+      used++; if(!z.exact) rough++; if(m.assumed) assumed=true;
+      z.zones.forEach((v,i)=>secs[i]+=v.secs);
+    }
+    if(!used){box.remove();return;}
+    const all=secs.reduce((p,q)=>p+q,0)||1, top=Math.max(...secs)||1;
+    box.innerHTML=`<h2>Heart rate zones</h2>${ZONES.map(([name,what],i)=>`<div class="prz" data-z="${i+1}"><span><b>${name}</b> <small>${what}</small></span><span class="prbar"><i class="z${i+1}" style="width:${(secs[i]/top*100).toFixed(1)}%"></i></span><span class="zt">${durText(secs[i])} · ${Math.round(secs[i]/all*100)}%</span></div>`).join('')}
+      <p class="muted">From ${used} of ${list.length} session${list.length===1?'':'s'} with heart rate detail, each judged against your maximum for that date.${rough?` ${rough} older import${rough===1?' is':'s are'} approximate.`:''}${assumed?' Your maximum is assumed: set it in Settings.':''}</p>`;
+  }catch(e){const box=$('#prZones');if(run===prRun&&box)box.innerHTML=`<h2>Heart rate zones</h2><p class="warnnote">Zone times could not be loaded: ${esc(e.message)}</p>`;}
+}
+function openPeriodReport(span,start){
+  prSpan=span; prStart=periodOf(span,start||todayStr()).from;
+  const first=rows.reduce((m,r)=>r.data.date<m?r.data.date:m,todayStr());
+  const canBack=prStart>first, canOn=periodOf(span,prStart).to<todayStr();
+  showReport(`<div class="seg" role="group" aria-label="Report length">${[['month','Month'],['quarter','Quarter']].map(([k,n])=>`<button type="button" data-prspan="${k}" aria-pressed="${k===span}" class="${k===span?'on':''}">${n}</button>`).join('')}</div>
+    <button type="button" class="btn" data-prstep="-1" aria-label="Earlier period" ${canBack?'':'disabled'}>‹ Earlier</button><button type="button" class="btn" data-prstep="1" aria-label="Later period" ${canOn?'':'disabled'}>Later ›</button>`,
+    periodReportHtml(),`exercise-${span}-report-${prStart.slice(0,7)}`,`${span==='quarter'?'Quarterly':'Monthly'} exercise report, ${periodOf(span,prStart).label}`);
+  prZones();
+}
+function periodClick(t){
+  if(t.id==='monthReport'){openPeriodReport('month');return true;}
+  if(t.id==='quarterReport'){openPeriodReport('quarter');return true;}
+  if(t.dataset.prspan){const r=periodOf(prSpan,prStart), today=todayStr();openPeriodReport(t.dataset.prspan,today>=r.from&&today<=r.to?today:t.dataset.prspan==='month'?r.to:r.from);return true;}
+  if(t.dataset.prstep){openPeriodReport(prSpan,stepPeriod(prSpan,prStart,+t.dataset.prstep));return true;}
+  return false;
+}
 /* ---------- Garmin sync: new activities and daily health, through the relay in the Supabase project ---------- */
 const GARMIN_SQL="-- Garmin daily health (sleep, HRV, resting heart rate, stress, Body Battery, steps, weight):\n-- run once in Supabase > SQL Editor (safe to run again)\ncreate table if not exists public.garmin_days (\n  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,\n  local_date  date not null,\n  data        jsonb not null,\n  updated_at  timestamptz not null default now(),\n  primary key (user_id, local_date)\n);\n\nalter table public.garmin_days enable row level security;\ndrop policy if exists \"own garmin days\" on public.garmin_days;\ncreate policy \"own garmin days\" on public.garmin_days\n  for all to authenticated\n  using (user_id = (select auth.uid()))\n  with check (user_id = (select auth.uid()));\n\nrevoke all on public.garmin_days from anon;\ngrant select, insert, update, delete on public.garmin_days to authenticated;\n";
 const GARMIN_RELAY="// Supabase Edge Function \"garmin\": a read-only relay between the Exercise Tool and the Garmin Connect Personal API.\n// The Garmin key is read from this project's secrets. It is never in the web page and is never sent to the browser.\n// Secrets to add (Supabase > Edge Functions > Secrets):\n//   GARMIN_API_KEY      the personal key from Garmin Connect\n//   GARMIN_OWNER_EMAIL  the email you sign in to the Exercise Tool with: nobody else may use the relay\n// Turn OFF \"Verify JWT with legacy secret\" for this function: it checks the signed-in user itself.\n\nconst GARMIN = 'https://personal.connectapi.garmin.com';\nconst ORIGINS = ['https://mkirsten583.github.io'];\nconst D = '\\\\d{4}-\\\\d{2}-\\\\d{2}';\nconst DATE = new RegExp(`^${D}$`);\nconst NUM = /^\\d{1,4}$/;\n// Only these Garmin addresses can be read, each with only these settings.\nconst ALLOWED = [\n  [/^\\/usersummary-service\\/v2\\/dailysummaries$/, { startDate: DATE, endDate: DATE }],\n  [/^\\/sleep-service\\/sleep\\/dailySleepSummariesByDate$/, { startDate: DATE, endDate: DATE }],\n  [new RegExp(`^/hrv-service/hrv/daily/${D}/${D}$`), {}],\n  [new RegExp(`^/weight-service/weight/range/${D}/${D}$`), { includeAll: /^(true|false)$/ }],\n  [/^\\/activitylist-service\\/activities\\/search\\/activities$/, { start: NUM, limit: NUM, startDate: DATE, endDate: DATE }],\n  [/^\\/download-service\\/files\\/activity\\/\\d{1,20}$/, {}],\n];\n\nlet token = null, expires = 0;   // kept only while this copy of the function stays awake\n\nconst headers = (req) => {\n  const o = req.headers.get('origin') || '';\n  return {\n    'Access-Control-Allow-Origin': ORIGINS.includes(o) ? o : ORIGINS[0],\n    'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',\n    'Access-Control-Allow-Methods': 'POST, OPTIONS',\n    'Cache-Control': 'no-store',\n    'Vary': 'Origin',\n  };\n};\nconst reply = (req, status, body) =>\n  new Response(JSON.stringify(body), { status, headers: { ...headers(req), 'Content-Type': 'application/json' } });\nclass Problem extends Error {\n  constructor(status, code, message) { super(message); this.status = status; this.code = code; }\n}\n\nasync function checkOwner(req) {\n  const owner = (Deno.env.get('GARMIN_OWNER_EMAIL') || '').trim().toLowerCase();\n  if (!owner) throw new Problem(500, 'setup', 'Add the GARMIN_OWNER_EMAIL secret in Supabase.');\n  const auth = req.headers.get('authorization') || '';\n  const apikey = req.headers.get('apikey') || Deno.env.get('SUPABASE_ANON_KEY') || '';\n  const r = await fetch(Deno.env.get('SUPABASE_URL') + '/auth/v1/user', { headers: { Authorization: auth, apikey } });\n  if (!r.ok) throw new Problem(401, 'signin', 'Sign in to the Exercise Tool again.');\n  const user = await r.json();\n  if ((user.email || '').toLowerCase() !== owner) throw new Problem(403, 'owner', 'This relay only works for its owner. Check the GARMIN_OWNER_EMAIL secret.');\n}\n\nasync function getToken() {\n  if (token && Date.now() < expires) return token;\n  const key = (Deno.env.get('GARMIN_API_KEY') || '').trim();\n  if (!key) throw new Problem(500, 'setup', 'Add the GARMIN_API_KEY secret in Supabase.');\n  if (!/^[\\x21-\\x7e]+$/.test(key)) throw new Problem(500, 'key', 'The GARMIN_API_KEY secret has spaces or line breaks in it. Paste the key again.');\n  const r = await fetch(GARMIN + '/personalapitoken-service/personal-api/personal-api-key/token',\n    { method: 'POST', headers: { Authorization: 'ApiKey ' + key, Accept: '*/*' } });\n  const text = (await r.text()).trim();\n  if (r.status === 401 || r.status === 403) throw new Problem(502, 'key', 'Garmin refused the key: it is wrong, expired or revoked. Create a new key and replace the GARMIN_API_KEY secret.');\n  if (r.status === 429) throw new Problem(429, 'busy', 'Garmin asked for a pause. Try again later.');\n  if (!r.ok || !text) throw new Problem(502, 'garmin', `Garmin did not give access (HTTP ${r.status}). Try again later.`);\n  let value = text.replace(/^\"|\"$/g, ''), seconds = 0;\n  if (text.startsWith('{')) {\n    let j; try { j = JSON.parse(text); } catch { throw new Problem(502, 'garmin', 'Garmin sent an access reply that could not be read.'); }\n    value = j.access_token || j.accessToken || j.token || '';\n    seconds = Number(j.expires_in || j.expiresIn) || 0;\n  }\n  if (!/^[\\x21-\\x7e]+$/.test(value)) throw new Problem(502, 'garmin', 'Garmin sent no usable access token.');\n  token = value;\n  expires = Date.now() + (seconds > 120 ? seconds - 60 : 23 * 3600) * 1000;\n  return token;\n}\n\nasync function garminGet(path, query) {\n  const url = GARMIN + path + (Object.keys(query).length ? '?' + new URLSearchParams(query) : '');\n  const send = async (accept) => fetch(url, { headers: { Authorization: 'Bearer ' + await getToken(), Accept: accept } });\n  let accept = path.startsWith('/download-service/') ? '*/*' : 'application/json';\n  let r = await send(accept);\n  if (r.status === 401) { token = null; r = await send(accept); }\n  if (r.status === 406) r = await send('*/*');\n  return r;\n}\n\nDeno.serve(async (req) => {\n  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: headers(req) });\n  try {\n    if (req.method !== 'POST') throw new Problem(405, 'request', 'Not allowed.');\n    await checkOwner(req);\n    let body; try { body = await req.json(); } catch { throw new Problem(400, 'request', 'Not understood.'); }\n    const path = String(body?.path || '');\n    if (path === 'ping') { await getToken(); return reply(req, 200, { ok: true }); }\n    const rule = ALLOWED.find(([re]) => re.test(path));\n    if (!rule) throw new Problem(400, 'request', 'That Garmin address is not allowed.');\n    const query = {};\n    for (const [k, v] of Object.entries(body.query || {})) {\n      if (!Object.hasOwn(rule[1], k) || !rule[1][k].test(String(v))) throw new Problem(400, 'request', 'That setting is not allowed: ' + k.slice(0, 20));\n      query[k] = String(v);\n    }\n    const r = await garminGet(path, query);\n    if (r.status === 204) return new Response(null, { status: 204, headers: headers(req) });\n    if (r.status === 429) throw new Problem(429, 'busy', 'Garmin asked for a pause. Try again later.');\n    if (!r.ok) throw new Problem(502, 'garmin', `Garmin answered HTTP ${r.status}.`);\n    return new Response(await r.arrayBuffer(), { status: 200, headers: { ...headers(req), 'Content-Type': r.headers.get('content-type') || 'application/octet-stream' } });\n  } catch (e) {\n    if (e instanceof Problem) return reply(req, e.status, { code: e.code, error: e.message });\n    console.error(e.message);\n    return reply(req, 502, { code: 'garmin', error: 'The relay could not reach Garmin. Try again later.' });\n  }\n});\n";
